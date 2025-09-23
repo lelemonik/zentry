@@ -2,73 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Zentry - Clean Minimal Design System */
+/* Modern Student Productivity App Design System */
 
 @layer base {
   :root {
-    /* Core Background & Text - Clean White */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 15%;
+    /* Core Background & Text */
+    --background: 220 20% 98%;
+    --foreground: 220 15% 15%;
     
-    /* Primary Brand Colors - Clean Gray/Black */
-    --primary: 0 0% 9%;
-    --primary-light: 0 0% 20%;
+    /* Primary Brand Colors - Soft Blue */
+    --primary: 210 60% 55%;
+    --primary-light: 210 60% 65%;
     --primary-foreground: 0 0% 100%;
     
-    /* Secondary - Light Gray */
-    --secondary: 0 0% 96%;
-    --secondary-light: 0 0% 98%;
-    --secondary-foreground: 0 0% 15%;
+    /* Secondary - Soft Purple */
+    --secondary: 260 40% 60%;
+    --secondary-light: 260 40% 70%;
+    --secondary-foreground: 0 0% 100%;
     
-    /* Accent - Clean Blue */
-    --accent: 217 91% 60%;
-    --accent-light: 217 91% 70%;
+    /* Accent - Mint Green */
+    --accent: 160 50% 55%;
+    --accent-light: 160 50% 65%;
     --accent-foreground: 0 0% 100%;
     
-    /* Color Options - iOS Style */
-    --color-pink: 339 82% 82%;
-    --color-blue: 217 91% 82%;
-    --color-purple: 262 83% 82%;
-    --color-green: 142 76% 73%;
-    --color-yellow: 45 93% 82%;
-    --color-orange: 25 95% 82%;
-    
     /* Success - Green */
-    --success: 142 76% 58%;
+    --success: 140 60% 50%;
     --success-foreground: 0 0% 100%;
     
     /* Warning - Orange */
-    --warning: 25 95% 65%;
+    --warning: 25 90% 60%;
     --warning-foreground: 0 0% 100%;
     
-    /* Muted & Neutral - Clean */
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    --border: 0 0% 90%;
-    --input: 0 0% 98%;
-    --ring: 217 91% 60%;
+    /* Muted & Neutral */
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 10% 40%;
+    --border: 220 15% 90%;
+    --input: 220 15% 94%;
+    --ring: 210 60% 55%;
     
-    /* Cards & Surfaces - Clean White */
+    /* Cards & Surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 15%;
+    --card-foreground: 220 15% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 15%;
+    --popover-foreground: 220 15% 15%;
     
     /* Destructive */
-    --destructive: 0 84% 60%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Clean Shadows - iOS Style */
-    --shadow-soft: 0 2px 10px hsl(0 0% 0% / 0.08);
-    --shadow-medium: 0 4px 20px hsl(0 0% 0% / 0.12);
-    --shadow-large: 0 8px 30px hsl(0 0% 0% / 0.15);
-    --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.1);
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(210 60% 55%), hsl(260 40% 60%));
+    --gradient-secondary: linear-gradient(135deg, hsl(160 50% 55%), hsl(210 60% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(260 40% 60%), hsl(160 50% 55%));
+    --gradient-subtle: linear-gradient(180deg, hsl(220 20% 98%), hsl(220 15% 96%));
+    
+    /* Shadows */
+    --shadow-soft: 0 2px 8px hsl(220 15% 15% / 0.08);
+    --shadow-medium: 0 4px 12px hsl(220 15% 15% / 0.12);
+    --shadow-large: 0 8px 24px hsl(220 15% 15% / 0.16);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     
-    --radius: 16px;
+    --radius: 12px;
+    
+    /* Sidebar (keeping for compatibility) */
+    --sidebar-background: 220 20% 98%;
+    --sidebar-foreground: 220 15% 15%;
+    --sidebar-primary: 210 60% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 96%;
+    --sidebar-accent-foreground: 220 15% 15%;
+    --sidebar-border: 220 15% 90%;
+    --sidebar-ring: 210 60% 55%;
   }
 
   .dark {
@@ -102,7 +109,7 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    background: hsl(var(--background));
+    background: var(--gradient-subtle);
   }
 }
 
