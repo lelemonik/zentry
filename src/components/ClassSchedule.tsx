@@ -1,73 +1,66 @@
 import React, { useState } from 'react';
-import { Plus, Clock, MapPin, BookOpen, Edit2, Trash2 } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface ClassItem {
   id: string;
   name: string;
-  instructor: string;
-  location: string;
+  instructor?: string;
+  location?: string;
   day: string;
   startTime: string;
   endTime: string;
   color: string;
 }
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
 const COLORS = [
-  'bg-primary', 'bg-secondary', 'bg-accent', 'bg-success', 
-  'bg-warning', 'bg-destructive'
+  'bg-gray-100',
+  'hsl(var(--color-pink))',
+  'hsl(var(--color-blue))', 
+  'hsl(var(--color-purple))',
+  'hsl(var(--color-green))',
+  'hsl(var(--color-yellow))',
+  'hsl(var(--color-orange))',
+  'hsl(var(--primary))',
 ];
 
 export default function ClassSchedule() {
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [isCreating, setIsCreating] = useState(false);
-  const [editingClass, setEditingClass] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [newClass, setNewClass] = useState({
     name: '',
     instructor: '',
     location: '',
-    day: '',
     startTime: '',
     endTime: '',
-    color: 'bg-primary'
   });
 
   const createClass = () => {
-    if (!newClass.name || !newClass.day || !newClass.startTime || !newClass.endTime) return;
+    if (!newClass.name.trim() || selectedDays.length === 0 || !newClass.startTime || !newClass.endTime) return;
     
-    const classItem: ClassItem = {
-      id: Date.now().toString(),
+    const newClasses = selectedDays.map(day => ({
+      id: `${Date.now()}-${day}`,
       ...newClass,
-    };
+      day,
+      color: selectedColor,
+    }));
     
-    setClasses([...classes, classItem]);
-    setNewClass({
-      name: '',
-      instructor: '',
-      location: '',
-      day: '',
-      startTime: '',
-      endTime: '',
-      color: 'bg-primary'
-    });
+    setClasses([...classes, ...newClasses]);
+    setNewClass({ name: '', instructor: '', location: '', startTime: '', endTime: '' });
+    setSelectedDays([]);
+    setSelectedColor(COLORS[0]);
     setIsCreating(false);
-  };
-
-  const updateClass = (id: string, updates: Partial<ClassItem>) => {
-    setClasses(classes.map(cls => 
-      cls.id === id ? { ...cls, ...updates } : cls
-    ));
   };
 
   const deleteClass = (id: string) => {
     setClasses(classes.filter(cls => cls.id !== id));
-    setEditingClass(null);
   };
 
   const getClassesForDay = (day: string) => {
@@ -77,274 +70,230 @@ export default function ClassSchedule() {
   };
 
   const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 6; hour <= 22; hour++) {
-      const time = hour.toString().padStart(2, '0') + ':00';
-      slots.push(time);
-      if (hour < 22) {
-        slots.push(hour.toString().padStart(2, '0') + ':30');
-      }
-    }
-    return slots;
+  const toggleDay = (day: string) => {
+    setSelectedDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day)
+        : [...prev, day]
+    );
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="shadow-medium">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-accent" />
-            Class Schedule
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button 
-            onClick={() => setIsCreating(true)}
-            className="w-full bg-gradient-accent hover:opacity-90 transition-opacity"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add New Class
-          </Button>
+    <div className="space-y-4 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Class Schedule</h1>
+          <p className="text-sm text-muted-foreground">
+            {new Date().toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
+          </p>
+        </div>
+        <Button
+          onClick={() => setIsCreating(true)}
+          size="icon"
+          className="h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
 
-          {isCreating && (
-            <Card className="mt-4 border-2 border-accent animate-slide-up">
-              <CardContent className="p-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    placeholder="Class name"
-                    value={newClass.name}
-                    onChange={(e) => setNewClass(prev => ({ ...prev, name: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="Instructor"
-                    value={newClass.instructor}
-                    onChange={(e) => setNewClass(prev => ({ ...prev, instructor: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="Location"
-                    value={newClass.location}
-                    onChange={(e) => setNewClass(prev => ({ ...prev, location: e.target.value }))}
-                  />
-                  <Select value={newClass.day} onValueChange={(value) => setNewClass(prev => ({ ...prev, day: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select day" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DAYS.map(day => (
-                        <SelectItem key={day} value={day}>{day}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={newClass.startTime} onValueChange={(value) => setNewClass(prev => ({ ...prev, startTime: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Start time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {generateTimeSlots().map(time => (
-                        <SelectItem key={time} value={time}>{formatTime(time)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={newClass.endTime} onValueChange={(value) => setNewClass(prev => ({ ...prev, endTime: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="End time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {generateTimeSlots().map(time => (
-                        <SelectItem key={time} value={time}>{formatTime(time)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex gap-2">
-                  {COLORS.map(color => (
-                    <button
-                      key={color}
-                      className={cn(
-                        "w-8 h-8 rounded-full transition-all",
-                        color,
-                        newClass.color === color && "ring-2 ring-offset-2 ring-ring"
-                      )}
-                      onClick={() => setNewClass(prev => ({ ...prev, color }))}
-                    />
-                  ))}
-                </div>
+      {/* Add Class Form */}
+      {isCreating && (
+        <Card className="p-4 shadow-card animate-scale-in">
+          <div className="space-y-4">
+            {/* Color Picker */}
+            <div className="flex gap-2">
+              {COLORS.map((color, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedColor(color)}
+                  className={cn(
+                    "h-8 w-8 rounded-full border-2 transition-all",
+                    selectedColor === color ? "border-primary scale-110" : "border-transparent",
+                    color.startsWith('hsl') ? '' : color
+                  )}
+                  style={color.startsWith('hsl') ? { backgroundColor: color } : {}}
+                />
+              ))}
+            </div>
 
-                <div className="flex gap-2 justify-end">
-                  <Button 
-                    variant="outline"
-                    onClick={() => {
-                      setIsCreating(false);
-                      setNewClass({
-                        name: '', instructor: '', location: '', day: '',
-                        startTime: '', endTime: '', color: 'bg-primary'
-                      });
-                    }}
+            {/* Class Details */}
+            <div className="space-y-3">
+              <Input
+                placeholder="Enter schedule title"
+                value={newClass.name}
+                onChange={(e) => setNewClass(prev => ({ ...prev, name: e.target.value }))}
+                className="border-0 bg-muted/50 focus:bg-muted font-medium"
+              />
+              <Input
+                placeholder="Enter instructor's name (Optional)"
+                value={newClass.instructor}
+                onChange={(e) => setNewClass(prev => ({ ...prev, instructor: e.target.value }))}
+                className="border-0 bg-muted/50 focus:bg-muted"
+              />
+              <Input
+                placeholder="Enter room location (Optional)"
+                value={newClass.location}
+                onChange={(e) => setNewClass(prev => ({ ...prev, location: e.target.value }))}
+                className="border-0 bg-muted/50 focus:bg-muted"
+              />
+            </div>
+
+            {/* Day Selection */}
+            <div>
+              <p className="text-sm font-medium mb-2">Schedules</p>
+              <div className="flex gap-2 mb-3">
+                {DAYS.map(day => (
+                  <button
+                    key={day}
+                    onClick={() => toggleDay(day)}
+                    className={cn(
+                      "px-3 py-2 text-xs font-medium rounded-lg border transition-all",
+                      selectedDays.includes(day)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                    )}
                   >
-                    Cancel
-                  </Button>
-                  <Button onClick={createClass} className="bg-accent">
-                    Add Class
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </CardContent>
-      </Card>
+                    {day}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-      <div className="grid gap-4">
+            {/* Time Selection */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">⏰ Start Time</p>
+                <Input
+                  type="time"
+                  value={newClass.startTime}
+                  onChange={(e) => setNewClass(prev => ({ ...prev, startTime: e.target.value }))}
+                  className="border-0 bg-muted/50 focus:bg-muted"
+                />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">⏰ End Time</p>
+                <Input
+                  type="time"
+                  value={newClass.endTime}
+                  onChange={(e) => setNewClass(prev => ({ ...prev, endTime: e.target.value }))}
+                  className="border-0 bg-muted/50 focus:bg-muted"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsCreating(false);
+                  setNewClass({ name: '', instructor: '', location: '', startTime: '', endTime: '' });
+                  setSelectedDays([]);
+                  setSelectedColor(COLORS[0]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={createClass}
+                className="bg-primary text-primary-foreground"
+              >
+                Create
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Schedule Grid */}
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {DAYS.map(day => {
           const dayClasses = getClassesForDay(day);
-          return (
-            <Card key={day} className="shadow-soft">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-semibold">{day}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {dayClasses.length === 0 ? (
-                  <p className="text-muted-foreground text-sm py-4">No classes scheduled</p>
-                ) : (
-                  <div className="space-y-2">
-                    {dayClasses.map(cls => (
-                      <Card 
-                        key={cls.id}
-                        className={cn(
-                          "transition-all duration-200 hover:shadow-medium cursor-pointer",
-                          cls.color, "text-white"
-                        )}
-                        onClick={() => setEditingClass(editingClass === cls.id ? null : cls.id)}
-                      >
-                        <CardContent className="p-4">
-                          {editingClass === cls.id ? (
-                            <div className="space-y-3 text-foreground" onClick={(e) => e.stopPropagation()}>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <Input
-                                  value={cls.name}
-                                  onChange={(e) => updateClass(cls.id, { name: e.target.value })}
-                                  placeholder="Class name"
-                                />
-                                <Input
-                                  value={cls.instructor}
-                                  onChange={(e) => updateClass(cls.id, { instructor: e.target.value })}
-                                  placeholder="Instructor"
-                                />
-                                <Input
-                                  value={cls.location}
-                                  onChange={(e) => updateClass(cls.id, { location: e.target.value })}
-                                  placeholder="Location"
-                                />
-                                <Select value={cls.day} onValueChange={(value) => updateClass(cls.id, { day: value })}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {DAYS.map(day => (
-                                      <SelectItem key={day} value={day}>{day}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Select value={cls.startTime} onValueChange={(value) => updateClass(cls.id, { startTime: value })}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {generateTimeSlots().map(time => (
-                                      <SelectItem key={time} value={time}>{formatTime(time)}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Select value={cls.endTime} onValueChange={(value) => updateClass(cls.id, { endTime: value })}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {generateTimeSlots().map(time => (
-                                      <SelectItem key={time} value={time}>{formatTime(time)}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              
-                              <div className="flex gap-2">
-                                {COLORS.map(color => (
-                                  <button
-                                    key={color}
-                                    className={cn(
-                                      "w-6 h-6 rounded-full transition-all",
-                                      color,
-                                      cls.color === color && "ring-2 ring-white"
-                                    )}
-                                    onClick={() => updateClass(cls.id, { color })}
-                                  />
-                                ))}
-                              </div>
+          const today = new Date().getDay();
+          const dayIndex = DAYS.indexOf(day);
+          const isToday = dayIndex === today;
 
-                              <div className="flex gap-2 justify-end">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setEditingClass(null)}
-                                >
-                                  Done
-                                </Button>
-                                <Button 
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => deleteClass(cls.id)}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h4 className="font-semibold">{cls.name}</h4>
-                                <div className="flex items-center gap-4 text-sm opacity-90 mt-1">
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {formatTime(cls.startTime)} - {formatTime(cls.endTime)}
-                                  </div>
-                                  {cls.instructor && (
-                                    <span>{cls.instructor}</span>
-                                  )}
-                                  {cls.location && (
-                                    <div className="flex items-center gap-1">
-                                      <MapPin className="h-3 w-3" />
-                                      {cls.location}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-white hover:bg-white/20"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingClass(cls.id);
-                                }}
-                              >
-                                <Edit2 className="h-3 w-3" />
-                              </Button>
-                            </div>
+          return (
+            <Card key={day} className="p-4 shadow-card">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className={cn(
+                    "font-medium text-sm",
+                    isToday && "text-accent"
+                  )}>
+                    {day}
+                  </h3>
+                  {isToday && (
+                    <div className="h-2 w-2 rounded-full bg-accent" />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  {dayClasses.map((classItem, index) => (
+                    <div
+                      key={classItem.id}
+                      className={cn(
+                        "p-3 rounded-lg border transition-all animate-slide-up group",
+                        "hover:shadow-soft cursor-pointer"
+                      )}
+                      style={{
+                        backgroundColor: classItem.color.startsWith('hsl') ? classItem.color : undefined,
+                        animationDelay: `${index * 50}ms`
+                      }}
+                      {...(classItem.color.startsWith('bg-') && { className: `${classItem.color} p-3 rounded-lg border transition-all animate-slide-up group hover:shadow-soft cursor-pointer` })}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {formatTime(classItem.startTime)} - {formatTime(classItem.endTime)}
+                          </div>
+                          <h4 className="font-medium text-sm line-clamp-1">
+                            {classItem.name}
+                          </h4>
+                          {classItem.instructor && (
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {classItem.instructor}
+                            </p>
                           )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
+                          {classItem.location && (
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              📍 {classItem.location}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteClass(classItem.id)}
+                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {dayClasses.length === 0 && (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <p className="text-xs">No classes</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </Card>
           );
         })}
