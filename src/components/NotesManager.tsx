@@ -73,7 +73,7 @@ export default function NotesManager() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-secondary" />
-            Quick Notes
+            What are your thoughts today?
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -213,7 +213,7 @@ export default function NotesManager() {
             <CardContent className="p-8 text-center">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">
-                {searchTerm ? 'No notes found matching your search.' : 'No notes yet. Create your first note!'}
+                {searchTerm ? 'No notes found matching your search.' : 'No notes yet.'}
               </p>
             </CardContent>
           </Card>
