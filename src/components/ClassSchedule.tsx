@@ -1,21 +1,33 @@
-import React, { useState } from 'react';
-import { Plus, Clock, MapPin, BookOpen, Edit2, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Clock, MapPin, BookOpen, Edit2, Trash2, Calendar, Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import { usePersistedState } from '@/hooks/use-local-storage';
+import { offlineDB, initOfflineDB } from '@/lib/offline-db';
+import { notificationScheduler } from '@/lib/notification-scheduler';
+import { responsiveClasses } from '@/lib/responsive-utils';
 
 interface ClassItem {
   id: string;
   name: string;
-  instructor: string;
+  organizer: string;
   location: string;
   day: string;
   startTime: string;
   endTime: string;
   color: string;
+  hasReminder: boolean;
+  reminderMinutes: number;
+  reminderId?: string;
+  isRecurring: boolean;
+  createdAt?: Date;
+  lastModified?: number;
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -25,49 +37,189 @@ const COLORS = [
 ];
 
 export default function ClassSchedule() {
-  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [classes, setClasses] = usePersistedState<ClassItem[]>('classes', []);
   const [isCreating, setIsCreating] = useState(false);
   const [editingClass, setEditingClass] = useState<string | null>(null);
+  const [offlineReady, setOfflineReady] = useState(false);
   const [newClass, setNewClass] = useState({
     name: '',
-    instructor: '',
+    organizer: '',
     location: '',
     day: '',
     startTime: '',
     endTime: '',
-    color: 'bg-primary'
+    color: 'bg-primary',
+    hasReminder: false,
+    reminderMinutes: 15,
+    isRecurring: true
   });
 
-  const createClass = () => {
-    if (!newClass.name || !newClass.day || !newClass.startTime || !newClass.endTime) return;
-    
-    const classItem: ClassItem = {
-      id: Date.now().toString(),
-      ...newClass,
+  // Initialize offline storage and notification system
+  useEffect(() => {
+    const initializeOffline = async () => {
+      try {
+        await initOfflineDB();
+        await notificationScheduler.initialize();
+        setOfflineReady(true);
+        
+        // Sync schedules from IndexedDB if available
+        if (classes.length === 0) {
+          const offlineSchedules = await offlineDB.getSchedules();
+          if (offlineSchedules.length > 0) {
+            setClasses(offlineSchedules);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to initialize offline functionality:', error);
+      }
     };
     
-    setClasses([...classes, classItem]);
-    setNewClass({
-      name: '',
-      instructor: '',
-      location: '',
-      day: '',
-      startTime: '',
-      endTime: '',
-      color: 'bg-primary'
-    });
-    setIsCreating(false);
+    initializeOffline();
+  }, []);
+
+  // Sync schedules to IndexedDB when schedules change
+  useEffect(() => {
+    if (offlineReady && classes.length > 0) {
+      classes.forEach(async (schedule) => {
+        try {
+          const existingSchedule = await offlineDB.get('schedules', schedule.id);
+          if (existingSchedule) {
+            await offlineDB.updateSchedule(schedule);
+          } else {
+            await offlineDB.addSchedule(schedule);
+          }
+        } catch (error) {
+          console.error('Error syncing schedule to offline storage:', error);
+        }
+      });
+    }
+  }, [classes, offlineReady]);
+
+  const createClass = async () => {
+    if (!newClass.name || !newClass.day || !newClass.startTime || !newClass.endTime) return;
+    
+    const scheduleId = `schedule-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const classItem: ClassItem = {
+      id: scheduleId,
+      ...newClass,
+      createdAt: new Date(),
+      lastModified: Date.now(),
+    };
+
+    try {
+      // Schedule reminder if enabled
+      if (newClass.hasReminder && newClass.isRecurring) {
+        // For recurring schedules, we need to schedule for each occurrence
+        const dayIndex = DAYS.indexOf(newClass.day);
+        const reminderId = await notificationScheduler.scheduleRecurringScheduleReminder(
+          { ...classItem, subject: newClass.name, date: '', time: newClass.startTime },
+          newClass.reminderMinutes,
+          [dayIndex]
+        );
+        classItem.reminderId = reminderId;
+      }
+
+      // Add to local state
+      setClasses([...classes, classItem]);
+
+      // Save to offline storage
+      if (offlineReady) {
+        await offlineDB.addSchedule(classItem);
+      }
+
+      // Reset form
+      setNewClass({
+        name: '',
+        organizer: '',
+        location: '',
+        day: '',
+        startTime: '',
+        endTime: '',
+        color: 'bg-primary',
+        hasReminder: false,
+        reminderMinutes: 15,
+        isRecurring: true
+      });
+      setIsCreating(false);
+    } catch (error) {
+      console.error('Error creating schedule:', error);
+    }
   };
 
-  const updateClass = (id: string, updates: Partial<ClassItem>) => {
+  const updateClass = async (id: string, updates: Partial<ClassItem>) => {
+    const updatedClass = { 
+      ...classes.find(cls => cls.id === id)!, 
+      ...updates,
+      lastModified: Date.now()
+    };
+    
     setClasses(classes.map(cls => 
-      cls.id === id ? { ...cls, ...updates } : cls
+      cls.id === id ? updatedClass : cls
     ));
+
+    if (offlineReady) {
+      await offlineDB.updateSchedule(updatedClass);
+    }
   };
 
-  const deleteClass = (id: string) => {
-    setClasses(classes.filter(cls => cls.id !== id));
-    setEditingClass(null);
+  const deleteClass = async (id: string) => {
+    const classItem = classes.find(cls => cls.id === id);
+    
+    try {
+      // Cancel any active reminders
+      if (classItem?.reminderId) {
+        await notificationScheduler.cancelReminder(classItem.reminderId);
+      }
+
+      setClasses(classes.filter(cls => cls.id !== id));
+      setEditingClass(null);
+
+      // Remove from offline storage
+      if (offlineReady) {
+        await offlineDB.delete('schedules', id);
+      }
+    } catch (error) {
+      console.error('Error deleting schedule:', error);
+      // Still update UI even if reminder cancellation failed
+      setClasses(classes.filter(cls => cls.id !== id));
+      setEditingClass(null);
+    }
+  };
+
+  const toggleClassReminder = async (id: string) => {
+    const classItem = classes.find(cls => cls.id === id);
+    if (!classItem) return;
+
+    try {
+      const updatedClass = { 
+        ...classItem, 
+        hasReminder: !classItem.hasReminder,
+        lastModified: Date.now()
+      };
+
+      if (!classItem.hasReminder && classItem.isRecurring) {
+        // Enable recurring reminder
+        const dayIndex = DAYS.indexOf(classItem.day);
+        const reminderId = await notificationScheduler.scheduleRecurringScheduleReminder(
+          { ...updatedClass, subject: classItem.name, date: '', time: classItem.startTime },
+          classItem.reminderMinutes,
+          [dayIndex]
+        );
+        updatedClass.reminderId = reminderId;
+      } else if (classItem.hasReminder && classItem.reminderId) {
+        // Disable reminder
+        await notificationScheduler.cancelReminder(classItem.reminderId);
+        updatedClass.reminderId = undefined;
+      }
+
+      setClasses(classes.map(cls => cls.id === id ? updatedClass : cls));
+
+      if (offlineReady) {
+        await offlineDB.updateSchedule(updatedClass);
+      }
+    } catch (error) {
+      console.error('Error toggling schedule reminder:', error);
+    }
   };
 
   const getClassesForDay = (day: string) => {
@@ -101,7 +253,7 @@ export default function ClassSchedule() {
       <Card className="shadow-medium">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-accent" />
+            <Calendar className="h-5 w-5 text-accent" />
             My Schedule
           </CardTitle>
         </CardHeader>
@@ -111,7 +263,7 @@ export default function ClassSchedule() {
             className="w-full bg-gradient-accent hover:opacity-90 transition-opacity"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add New Class
+            Add New
           </Button>
 
           {isCreating && (
@@ -124,9 +276,9 @@ export default function ClassSchedule() {
                     onChange={(e) => setNewClass(prev => ({ ...prev, name: e.target.value }))}
                   />
                   <Input
-                    placeholder="Instructor"
-                    value={newClass.instructor}
-                    onChange={(e) => setNewClass(prev => ({ ...prev, instructor: e.target.value }))}
+                    placeholder="Organizer"
+                    value={newClass.organizer}
+                    onChange={(e) => setNewClass(prev => ({ ...prev, organizer: e.target.value }))}
                   />
                   <Input
                     placeholder="Location"
@@ -164,6 +316,47 @@ export default function ClassSchedule() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Reminder Settings */}
+                <div className="space-y-3 border-t pt-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Reminder Settings</Label>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="reminder-toggle"
+                        checked={newClass.hasReminder}
+                        onCheckedChange={(checked) => setNewClass(prev => ({ ...prev, hasReminder: checked }))}
+                      />
+                      <Label htmlFor="reminder-toggle" className="text-sm flex items-center gap-1">
+                        <Bell className="h-3 w-3" />
+                        Enable Reminders
+                      </Label>
+                    </div>
+                    
+                    {newClass.hasReminder && (
+                      <>
+                        <Select 
+                          value={newClass.reminderMinutes.toString()} 
+                          onValueChange={(value) => setNewClass(prev => ({ ...prev, reminderMinutes: parseInt(value) }))}
+                        >
+                          <SelectTrigger className="w-28">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">5 min</SelectItem>
+                            <SelectItem value="15">15 min</SelectItem>
+                            <SelectItem value="30">30 min</SelectItem>
+                            <SelectItem value="60">1 hour</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <span className="text-xs text-muted-foreground">before class</span>
+                      </>
+                    )}
+                  </div>
+                </div>
                 
                 <div className="flex gap-2">
                   {COLORS.map(color => (
@@ -185,8 +378,9 @@ export default function ClassSchedule() {
                     onClick={() => {
                       setIsCreating(false);
                       setNewClass({
-                        name: '', instructor: '', location: '', day: '',
-                        startTime: '', endTime: '', color: 'bg-primary'
+                        name: '', organizer: '', location: '', day: '',
+                        startTime: '', endTime: '', color: 'bg-primary',
+                        hasReminder: false, reminderMinutes: 15, isRecurring: true
                       });
                     }}
                   >
@@ -234,9 +428,9 @@ export default function ClassSchedule() {
                                   placeholder="Class name"
                                 />
                                 <Input
-                                  value={cls.instructor}
-                                  onChange={(e) => updateClass(cls.id, { instructor: e.target.value })}
-                                  placeholder="Instructor"
+                                  value={cls.organizer}
+                                  onChange={(e) => updateClass(cls.id, { organizer: e.target.value })}
+                                  placeholder="Organizer"
                                 />
                                 <Input
                                   value={cls.location}
@@ -308,15 +502,15 @@ export default function ClassSchedule() {
                             </div>
                           ) : (
                             <div className="flex items-center justify-between">
-                              <div>
+                              <div className="flex-1">
                                 <h4 className="font-semibold">{cls.name}</h4>
                                 <div className="flex items-center gap-4 text-sm opacity-90 mt-1">
                                   <div className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
                                     {formatTime(cls.startTime)} - {formatTime(cls.endTime)}
                                   </div>
-                                  {cls.instructor && (
-                                    <span>{cls.instructor}</span>
+                                  {cls.organizer && (
+                                    <span>{cls.organizer}</span>
                                   )}
                                   {cls.location && (
                                     <div className="flex items-center gap-1">
@@ -324,19 +518,42 @@ export default function ClassSchedule() {
                                       {cls.location}
                                     </div>
                                   )}
+                                  {cls.hasReminder && (
+                                    <div className="flex items-center gap-1">
+                                      <Bell className="h-3 w-3" />
+                                      <span className="text-xs">{cls.reminderMinutes}min</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-white hover:bg-white/20"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingClass(cls.id);
-                                }}
-                              >
-                                <Edit2 className="h-3 w-3" />
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={cn(
+                                    "text-white hover:bg-white/20 h-8 w-8 p-0",
+                                    cls.hasReminder && "bg-white/20"
+                                  )}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleClassReminder(cls.id);
+                                  }}
+                                  title={cls.hasReminder ? "Disable reminder" : "Enable reminder"}
+                                >
+                                  {cls.hasReminder ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-white hover:bg-white/20"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingClass(cls.id);
+                                  }}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </CardContent>

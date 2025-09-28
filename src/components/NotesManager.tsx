@@ -1,27 +1,32 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit3, Trash2, FileText } from 'lucide-react';
+import { Plus, Search, Edit3, Trash2, FileText, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { usePersistedState } from '@/hooks/use-local-storage';
+import { responsiveClasses } from '@/lib/responsive-utils';
 
 interface Note {
   id: string;
   title: string;
   content: string;
   tags: string[];
+  category: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export default function NotesManager() {
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [notes, setNotes] = usePersistedState<Note[]>('notes', []);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isCreating, setIsCreating] = useState(false);
   const [editingNote, setEditingNote] = useState<string | null>(null);
-  const [newNote, setNewNote] = useState({ title: '', content: '' });
+  const [newNote, setNewNote] = useState({ title: '', content: '', category: 'General' });
 
   const createNote = () => {
     if (!newNote.title.trim() && !newNote.content.trim()) return;
@@ -30,13 +35,14 @@ export default function NotesManager() {
       id: Date.now().toString(),
       title: newNote.title || 'Untitled Note',
       content: newNote.content,
+      category: newNote.category,
       tags: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     
     setNotes([note, ...notes]);
-    setNewNote({ title: '', content: '' });
+    setNewNote({ title: '', content: '', category: 'General' });
     setIsCreating(false);
   };
 
@@ -53,10 +59,15 @@ export default function NotesManager() {
     setEditingNote(null);
   };
 
-  const filteredNotes = notes.filter(note =>
-    note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    note.content.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredNotes = notes.filter(note => {
+    const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         note.content.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || note.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+
+  const categories = Array.from(new Set([...notes.map(note => note.category), 'General', 'Study', 'Work', 'Personal']));
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -77,7 +88,7 @@ export default function NotesManager() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -87,6 +98,17 @@ export default function NotesManager() {
                 className="pl-10"
               />
             </div>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button 
               onClick={() => setIsCreating(true)}
               className="bg-gradient-secondary hover:opacity-90 transition-opacity"
@@ -99,12 +121,27 @@ export default function NotesManager() {
           {isCreating && (
             <Card className="border-2 border-secondary animate-slide-up">
               <CardContent className="p-4 space-y-3">
-                <Input
-                  placeholder="Note title..."
-                  value={newNote.title}
-                  onChange={(e) => setNewNote(prev => ({ ...prev, title: e.target.value }))}
-                  className="font-medium"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Note title..."
+                    value={newNote.title}
+                    onChange={(e) => setNewNote(prev => ({ ...prev, title: e.target.value }))}
+                    className="font-medium flex-1"
+                  />
+                  <Select 
+                    value={newNote.category} 
+                    onValueChange={(value) => setNewNote(prev => ({ ...prev, category: value }))}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Textarea
                   placeholder="Write your note here..."
                   value={newNote.content}
@@ -117,7 +154,7 @@ export default function NotesManager() {
                     size="sm"
                     onClick={() => {
                       setIsCreating(false);
-                      setNewNote({ title: '', content: '' });
+                      setNewNote({ title: '', content: '', category: 'General' });
                     }}
                   >
                     Cancel
@@ -136,7 +173,7 @@ export default function NotesManager() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className={responsiveClasses.grid.threeColumn}>
         {filteredNotes.map((note) => (
           <Card 
             key={note.id}
@@ -198,9 +235,14 @@ export default function NotesManager() {
                   </p>
                   
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline" className="text-xs">
-                      {formatDate(note.updatedAt)}
-                    </Badge>
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="text-xs">
+                        {note.category}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {formatDate(note.updatedAt)}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               )}
