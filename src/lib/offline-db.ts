@@ -2,7 +2,7 @@
 class OfflineDB {
   private db: IDBDatabase | null = null;
   private dbName = 'ZentryOfflineDB';
-  private dbVersion = 1;
+  private dbVersion = 3;
 
   // Initialize the database
   async init(): Promise<void> {
@@ -62,6 +62,16 @@ class OfflineDB {
           const prefStore = db.createObjectStore('userPreferences', { keyPath: 'key' });
           prefStore.createIndex('lastModified', 'lastModified', { unique: false });
         }
+
+        if (!db.objectStoreNames.contains('userProfiles')) {
+          const profileStore = db.createObjectStore('userProfiles', { keyPath: 'id' });
+          profileStore.createIndex('updatedAt', 'updatedAt', { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains('userData')) {
+          const userDataStore = db.createObjectStore('userData', { keyPath: 'id' });
+          userDataStore.createIndex('updatedAt', 'updatedAt', { unique: false });
+        }
       };
     });
   }
@@ -82,21 +92,29 @@ class OfflineDB {
 
   // Generic method to update data
   async update(storeName: string, data: any): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) {
+      await this.init();
+    }
     
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.put(data);
-      
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve();
+      try {
+        const transaction = this.db!.transaction([storeName], 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.put(data);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+      } catch (error) {
+        reject(new Error(`Store '${storeName}' not found. Available stores: ${Array.from(this.db!.objectStoreNames).join(', ')}`));
+      }
     });
   }
 
   // Generic method to get data by ID
   async get(storeName: string, id: string): Promise<any> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) {
+      await this.init();
+    }
     
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction([storeName], 'readonly');
@@ -404,6 +422,20 @@ class OfflineDB {
   async getUserProfile(): Promise<any> {
     const result = await this.get('userPreferences', 'userProfile');
     return result ? result.data : null;
+  }
+
+  // Method to clear/reset the database
+  async clearDatabase(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.db) {
+        this.db.close();
+        this.db = null;
+      }
+      
+      const deleteRequest = indexedDB.deleteDatabase(this.dbName);
+      deleteRequest.onerror = () => reject(deleteRequest.error);
+      deleteRequest.onsuccess = () => resolve();
+    });
   }
 }
 

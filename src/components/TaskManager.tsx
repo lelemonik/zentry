@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Check, Clock, Calendar, Search, Bell, BellOff } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, Clock, Calendar, Search, Bell, BellOff, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,30 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { usePersistedState } from '@/hooks/use-local-storage';
+import { useAuth } from '@/contexts/AuthContext';
+import { autoSaveTasks, loadTasks, Task } from '@/lib/universal-sync';
 import { TaskSkeleton } from '@/components/ui/loading';
-import { offlineDB, initOfflineDB } from '@/lib/offline-db';
+import { offlineDB, initOfflineDB } from '../lib/offline-db';
 import { notificationScheduler } from '@/lib/notification-scheduler';
 import { responsiveClasses } from '@/lib/responsive-utils';
 
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  priority: 'low' | 'medium' | 'high';
-  category: string;
-  dueDate?: string;
-  dueTime?: string;
-  hasReminder: boolean;
-  reminderMinutes: number; // Minutes before due date to show reminder
-  reminderId?: string;
-  createdAt: Date;
-  lastModified?: number;
-}
-
 export default function TaskManager() {
-  const [tasks, setTasks, isLoading] = usePersistedState<Task[]>('tasks', []);
+  const { currentUser: user } = useAuth();
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
   const [newTaskCategory, setNewTaskCategory] = useState('General');
   const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
@@ -43,29 +29,76 @@ export default function TaskManager() {
   const [editingTask, setEditingTask] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [offlineReady, setOfflineReady] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize offline storage and notification system
+  // Load tasks when component mounts or user changes
   useEffect(() => {
-    const initializeOffline = async () => {
-      try {
-        await initOfflineDB();
-        await notificationScheduler.initialize();
-        setOfflineReady(true);
-        
-        // Sync tasks from IndexedDB if available
-        if (tasks.length === 0) {
-          const offlineTasks = await offlineDB.getTasks();
-          if (offlineTasks.length > 0) {
-            setTasks(offlineTasks);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to initialize offline functionality:', error);
+    if (user) {
+      loadUserTasks();
+      initializeOffline();
+    } else {
+      setTasks([]);
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  // Listen for real-time updates from other devices
+  useEffect(() => {
+    if (!user) return;
+
+    const handleTasksUpdate = (event: CustomEvent) => {
+      if (event.detail.userId === user.uid) {
+        console.log('📱 Received tasks update from another device');
+        const updatedTasks = event.detail.data?.tasks || [];
+        setTasks(updatedTasks);
       }
     };
+
+    window.addEventListener('tasksUpdated', handleTasksUpdate as EventListener);
+    return () => {
+      window.removeEventListener('tasksUpdated', handleTasksUpdate as EventListener);
+    };
+  }, [user]);
+
+  // Initialize offline storage and notification system
+  const initializeOffline = async () => {
+    try {
+      await initOfflineDB();
+      await notificationScheduler.initialize();
+      setOfflineReady(true);
+    } catch (error) {
+      console.error('Failed to initialize offline functionality:', error);
+    }
+  };
+
+  const loadUserTasks = async () => {
+    if (!user) return;
     
-    initializeOffline();
-  }, []);
+    try {
+      setIsLoading(true);
+      const userTasks = await loadTasks(user.uid);
+      setTasks(userTasks);
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveTasksToCloud = async (updatedTasks: Task[]) => {
+    if (!user) return;
+
+    try {
+      setIsAutoSaving(true);
+      await autoSaveTasks(user.uid, updatedTasks, 2000);
+    } catch (error) {
+      console.error('Failed to auto-save tasks:', error);
+    } finally {
+      // Reset auto-saving indicator after a delay
+      setTimeout(() => setIsAutoSaving(false), 3000);
+    }
+  };
 
   // Sync tasks to IndexedDB when tasks change
   useEffect(() => {
@@ -111,12 +144,16 @@ export default function TaskManager() {
       }
 
       // Add to local state
-      setTasks([task, ...tasks]);
+      const updatedTasks = [task, ...tasks];
+      setTasks(updatedTasks);
 
       // Save to offline storage
       if (offlineReady) {
         await offlineDB.addTask(task);
       }
+
+      // Auto-save to cloud
+      saveTasksToCloud(updatedTasks);
 
       // Reset form
       setNewTask('');
@@ -153,16 +190,22 @@ export default function TaskManager() {
         updatedTask.reminderId = reminderId;
       }
 
-      setTasks(tasks.map(t => t.id === id ? updatedTask : t));
+      const updatedTasks = tasks.map(t => t.id === id ? updatedTask : t);
+      setTasks(updatedTasks);
 
       // Update offline storage
       if (offlineReady) {
         await offlineDB.updateTask(updatedTask);
       }
+
+      // Auto-save to cloud
+      saveTasksToCloud(updatedTasks);
     } catch (error) {
       console.error('Error toggling task:', error);
       // Still update UI even if reminder operation failed
-      setTasks(tasks.map(t => t.id === id ? updatedTask : t));
+      const updatedTasks = tasks.map(t => t.id === id ? updatedTask : t);
+      setTasks(updatedTasks);
+      saveTasksToCloud(updatedTasks);
     }
   };
 
@@ -175,12 +218,16 @@ export default function TaskManager() {
         await notificationScheduler.cancelReminder(task.reminderId);
       }
 
-      setTasks(tasks.filter(t => t.id !== id));
+      const updatedTasks = tasks.filter(t => t.id !== id);
+      setTasks(updatedTasks);
 
       // Remove from offline storage
       if (offlineReady) {
         await offlineDB.delete('tasks', id);
       }
+
+      // Auto-save to cloud
+      saveTasksToCloud(updatedTasks);
     } catch (error) {
       console.error('Error deleting task:', error);
       // Still update UI even if reminder cancellation failed
@@ -189,16 +236,24 @@ export default function TaskManager() {
   };
 
   const updateTask = (id: string, title: string) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, title } : task
-    ));
+    const updatedTasks = tasks.map(task => 
+      task.id === id ? { ...task, title, lastModified: Date.now() } : task
+    );
+    setTasks(updatedTasks);
     setEditingTask(null);
+    
+    // Auto-save to cloud
+    saveTasksToCloud(updatedTasks);
   };
 
   const updateTaskPriority = (id: string, priority: 'low' | 'medium' | 'high') => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, priority } : task
-    ));
+    const updatedTasks = tasks.map(task => 
+      task.id === id ? { ...task, priority, lastModified: Date.now() } : task
+    );
+    setTasks(updatedTasks);
+    
+    // Auto-save to cloud
+    saveTasksToCloud(updatedTasks);
   };
 
   const updateTaskCategory = async (id: string, category: string) => {
@@ -208,13 +263,17 @@ export default function TaskManager() {
       lastModified: Date.now()
     };
     
-    setTasks(tasks.map(task => 
+    const updatedTasks = tasks.map(task => 
       task.id === id ? updatedTask : task
-    ));
+    );
+    setTasks(updatedTasks);
 
     if (offlineReady) {
       await offlineDB.updateTask(updatedTask);
     }
+    
+    // Auto-save to cloud
+    saveTasksToCloud(updatedTasks);
   };
 
   const toggleTaskReminder = async (id: string) => {
@@ -238,11 +297,15 @@ export default function TaskManager() {
         updatedTask.reminderId = undefined;
       }
 
-      setTasks(tasks.map(t => t.id === id ? updatedTask : t));
+      const updatedTasks = tasks.map(t => t.id === id ? updatedTask : t);
+      setTasks(updatedTasks);
 
       if (offlineReady) {
         await offlineDB.updateTask(updatedTask);
       }
+      
+      // Auto-save to cloud
+      saveTasksToCloud(updatedTasks);
     } catch (error) {
       console.error('Error toggling task reminder:', error);
     }
@@ -268,16 +331,24 @@ export default function TaskManager() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <Card className="shadow-medium">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
-            Task Manager
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center justify-between text-lg sm:text-xl">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              Task Manager
+            </div>
+            {isAutoSaving && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Cloud className="h-4 w-4 animate-spin" />
+                <span className="hidden sm:inline">Auto-saving...</span>
+              </div>
+            )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
+        <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
+          <div className="space-y-3 sm:space-y-4">
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -285,114 +356,128 @@ export default function TaskManager() {
                   placeholder="Search tasks..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 text-sm sm:text-base"
                 />
               </div>
             </div>
             
-            <div className="space-y-3">
-              {/* Main task input row */}
-              <div className="flex gap-2">
+            <div className="space-y-3 sm:space-y-4">
+              {/* Main task input row - responsive layout */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <Input
                   placeholder="Add a new task..."
                   value={newTask}
                   onChange={(e) => setNewTask(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && addTask()}
-                  className="flex-1"
+                  className="flex-1 text-sm sm:text-base"
                 />
-                <Select value={newTaskCategory} onValueChange={setNewTaskCategory}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={newTaskPriority} onValueChange={(value: 'low' | 'medium' | 'high') => setNewTaskPriority(value)}>
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button 
-                  onClick={addTask} 
-                  className="bg-gradient-primary hover:opacity-90 transition-opacity"
-                  disabled={!newTask.trim()}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Due date and reminder row */}
-              <div className="flex gap-2 items-end">
-                <div className="space-y-1">
-                  <Label htmlFor="due-date" className="text-xs">Due Date</Label>
-                  <Input
-                    id="due-date"
-                    type="date"
-                    value={newTaskDueDate}
-                    onChange={(e) => setNewTaskDueDate(e.target.value)}
-                    className="w-36"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="due-time" className="text-xs">Due Time</Label>
-                  <Input
-                    id="due-time"
-                    type="time"
-                    value={newTaskDueTime}
-                    onChange={(e) => setNewTaskDueTime(e.target.value)}
-                    className="w-28"
-                    disabled={!newTaskDueDate}
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="reminder-toggle"
-                    checked={newTaskReminder}
-                    onCheckedChange={setNewTaskReminder}
-                    disabled={!newTaskDueDate || !newTaskDueTime}
-                  />
-                  <Label htmlFor="reminder-toggle" className="text-xs flex items-center gap-1">
-                    <Bell className="h-3 w-3" />
-                    Reminder
-                  </Label>
-                </div>
-                {newTaskReminder && (
-                  <Select 
-                    value={newTaskReminderMinutes.toString()} 
-                    onValueChange={(value) => setNewTaskReminderMinutes(parseInt(value))}
-                  >
-                    <SelectTrigger className="w-28">
+                <div className="flex gap-2 sm:gap-3">
+                  <Select value={newTaskCategory} onValueChange={setNewTaskCategory}>
+                    <SelectTrigger className="w-full sm:w-32 text-xs sm:text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="5">5 min</SelectItem>
-                      <SelectItem value="15">15 min</SelectItem>
-                      <SelectItem value="30">30 min</SelectItem>
-                      <SelectItem value="60">1 hour</SelectItem>
-                      <SelectItem value="1440">1 day</SelectItem>
+                      {categories.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                )}
+                  <Select value={newTaskPriority} onValueChange={(value: 'low' | 'medium' | 'high') => setNewTaskPriority(value)}>
+                    <SelectTrigger className="w-full sm:w-24 text-xs sm:text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={addTask} 
+                    className="bg-gradient-primary hover:opacity-90 transition-opacity px-3 sm:px-4"
+                    disabled={!newTask.trim()}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="sr-only sm:not-sr-only sm:ml-1">Add</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Due date and reminder row - responsive layout */}
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="due-date" className="text-xs sm:text-sm font-medium">Due Date</Label>
+                    <Input
+                      id="due-date"
+                      type="date"
+                      value={newTaskDueDate}
+                      onChange={(e) => setNewTaskDueDate(e.target.value)}
+                      className="w-full sm:w-36 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="due-time" className="text-xs sm:text-sm font-medium">Due Time</Label>
+                    <Input
+                      id="due-time"
+                      type="time"
+                      value={newTaskDueTime}
+                      onChange={(e) => setNewTaskDueTime(e.target.value)}
+                      className="w-full sm:w-28 text-sm"
+                      disabled={!newTaskDueDate}
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
+                  <div className="flex items-center space-x-3 py-1">
+                    <Switch
+                      id="reminder-toggle"
+                      checked={newTaskReminder}
+                      onCheckedChange={setNewTaskReminder}
+                      disabled={!newTaskDueDate || !newTaskDueTime}
+                    />
+                    <Label htmlFor="reminder-toggle" className="text-xs sm:text-sm flex items-center gap-1 font-medium">
+                      <Bell className="h-3 w-3" />
+                      Reminder
+                    </Label>
+                  </div>
+                  {newTaskReminder && (
+                    <div className="space-y-1">
+                      <Label className="text-xs sm:text-sm font-medium">Remind Before</Label>
+                      <Select 
+                        value={newTaskReminderMinutes.toString()} 
+                        onValueChange={(value) => setNewTaskReminderMinutes(parseInt(value))}
+                      >
+                        <SelectTrigger className="w-full sm:w-28 text-xs sm:text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5 min</SelectItem>
+                          <SelectItem value="15">15 min</SelectItem>
+                          <SelectItem value="30">30 min</SelectItem>
+                          <SelectItem value="60">1 hour</SelectItem>
+                          <SelectItem value="1440">1 day</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             {(['all', 'active', 'completed'] as const).map((filterType) => (
               <Button
                 key={filterType}
                 variant={filter === filterType ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilter(filterType)}
-                className={filter === filterType ? "bg-primary" : ""}
+                className={cn(
+                  "flex-1 sm:flex-none text-xs sm:text-sm px-3 sm:px-4 py-2",
+                  filter === filterType ? "bg-primary" : ""
+                )}
               >
                 {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
               </Button>
@@ -404,7 +489,7 @@ export default function TaskManager() {
       {isLoading ? (
         <TaskSkeleton />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {filteredTasks.map((task) => (
           <Card 
             key={task.id} 
@@ -413,133 +498,147 @@ export default function TaskManager() {
               task.completed && "opacity-60"
             )}
           >
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleTask(task.id)}
-                  className={cn(
-                    "h-6 w-6 rounded-full p-0",
-                    task.completed ? "bg-success text-success-foreground" : "border-2 border-border"
-                  )}
-                >
-                  {task.completed && <Check className="h-3 w-3" />}
-                </Button>
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                {/* Top row: checkbox + task content */}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleTask(task.id)}
+                    className={cn(
+                      "h-5 w-5 sm:h-6 sm:w-6 rounded-full p-0 flex-shrink-0",
+                      task.completed ? "bg-success text-success-foreground" : "border-2 border-border"
+                    )}
+                  >
+                    {task.completed && <Check className="h-3 w-3" />}
+                  </Button>
 
-                <div className="flex-1">
-                  {editingTask === task.id ? (
-                    <Input
-                      defaultValue={task.title}
-                      onBlur={(e) => updateTask(task.id, e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          updateTask(task.id, e.currentTarget.value);
-                        }
-                      }}
-                      autoFocus
-                      className="text-sm"
-                    />
-                  ) : (
-                    <div className="space-y-1">
-                      <span 
-                        className={cn(
-                          "text-sm font-medium block",
-                          task.completed && "line-through text-muted-foreground"
+                  <div className="flex-1 min-w-0">
+                    {editingTask === task.id ? (
+                      <Input
+                        defaultValue={task.title}
+                        onBlur={(e) => updateTask(task.id, e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            updateTask(task.id, e.currentTarget.value);
+                          }
+                        }}
+                        autoFocus
+                        className="text-sm"
+                      />
+                    ) : (
+                      <div className="space-y-1">
+                        <span 
+                          className={cn(
+                            "text-sm sm:text-base font-medium block break-words",
+                            task.completed && "line-through text-muted-foreground"
+                          )}
+                        >
+                          {task.title}
+                        </span>
+                        {(task.dueDate || task.hasReminder) && (
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            {task.dueDate && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 flex-shrink-0" />
+                                <span className="break-all">
+                                  {new Date(task.dueDate).toLocaleDateString()}
+                                  {task.dueTime && ` at ${task.dueTime}`}
+                                </span>
+                              </div>
+                            )}
+                            {task.hasReminder && task.dueDate && (
+                              <Badge variant="outline" className="text-xs h-5 px-2 flex-shrink-0">
+                                <Bell className="h-2 w-2 mr-1" />
+                                {task.reminderMinutes}min
+                              </Badge>
+                            )}
+                          </div>
                         )}
-                      >
-                        {task.title}
-                      </span>
-                      {(task.dueDate || task.hasReminder) && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {task.dueDate && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              <span>
-                                {new Date(task.dueDate).toLocaleDateString()}
-                                {task.dueTime && ` at ${task.dueTime}`}
-                              </span>
-                            </div>
-                          )}
-                          {task.hasReminder && task.dueDate && (
-                            <Badge variant="outline" className="text-xs h-5 px-1">
-                              <Bell className="h-2 w-2 mr-1" />
-                              {task.reminderMinutes}min
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Select 
-                    value={task.priority} 
-                    onValueChange={(value: 'low' | 'medium' | 'high') => updateTaskPriority(task.id, value)}
-                  >
-                    <SelectTrigger className="w-20 h-6 text-xs">
-                      <Badge className={cn("text-xs border-0", getPriorityColor(task.priority))}>
-                        {task.priority}
-                      </Badge>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Select 
-                    value={task.category} 
-                    onValueChange={(value) => updateTaskCategory(task.id, value)}
-                  >
-                    <SelectTrigger className="w-20 h-6 text-xs">
-                      <Badge variant="outline" className="text-xs">
-                        {task.category}
-                      </Badge>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {task.dueDate && task.dueTime && !task.completed && (
+                {/* Bottom row: controls (responsive layout) */}
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-1 sm:ml-auto">
+                  {/* Priority and Category - responsive width */}
+                  <div className="flex gap-1 sm:gap-2">
+                    <Select 
+                      value={task.priority} 
+                      onValueChange={(value: 'low' | 'medium' | 'high') => updateTaskPriority(task.id, value)}
+                    >
+                      <SelectTrigger className="w-18 sm:w-24 h-6 text-xs px-1">
+                        <Badge className={cn("text-xs border-0 px-1 py-0 h-4", getPriorityColor(task.priority))}>
+                          <span className="truncate block min-w-0">
+                            {task.priority}
+                          </span>
+                        </Badge>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Select 
+                      value={task.category} 
+                      onValueChange={(value) => updateTaskCategory(task.id, value)}
+                    >
+                      <SelectTrigger className="w-18 sm:w-24 h-6 text-xs px-1">
+                        <Badge variant="outline" className="text-xs px-1 py-0 h-4 min-w-0 max-w-none overflow-hidden">
+                          <span className="truncate block min-w-0">
+                            {task.category}
+                          </span>
+                        </Badge>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(category => (
+                          <SelectItem key={category} value={category}>{category}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex gap-1">
+                    {task.dueDate && task.dueTime && !task.completed && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleTaskReminder(task.id)}
+                        className={cn(
+                          "h-7 w-7 sm:h-8 sm:w-8 p-0 transition-colors",
+                          task.hasReminder 
+                            ? "text-primary hover:text-primary/80" 
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                        title={task.hasReminder ? "Disable reminder" : "Enable reminder"}
+                      >
+                        {task.hasReminder ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
+                      </Button>
+                    )}
+
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toggleTaskReminder(task.id)}
-                      className={cn(
-                        "h-8 w-8 p-0 transition-colors",
-                        task.hasReminder 
-                          ? "text-primary hover:text-primary/80" 
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                      title={task.hasReminder ? "Disable reminder" : "Enable reminder"}
+                      onClick={() => setEditingTask(task.id)}
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-muted-foreground hover:text-foreground"
                     >
-                      {task.hasReminder ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
+                      <Edit2 className="h-3 w-3" />
                     </Button>
-                  )}
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditingTask(task.id)}
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                  >
-                    <Edit2 className="h-3 w-3" />
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteTask(task.id)}
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteTask(task.id)}
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -548,9 +647,9 @@ export default function TaskManager() {
 
           {filteredTasks.length === 0 && (
             <Card className="shadow-soft">
-              <CardContent className="p-8 text-center">
-                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
+              <CardContent className="p-6 sm:p-8 text-center">
+                <Clock className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
+                <p className="text-sm sm:text-base text-muted-foreground">
                   {filter === 'all' ? 'No tasks yet. Add one above!' :
                    filter === 'active' ? 'No active tasks!' :
                    'No completed tasks!'}

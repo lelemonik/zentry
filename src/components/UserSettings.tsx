@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Palette, Bell, Download, Trash2, Settings, Smartphone, Save } from 'lucide-react';
+import { User, Bell, Download, Trash2, Settings, Smartphone, Save, Check, X, AlertCircle, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,51 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePersistedState } from '@/hooks/use-local-storage';
 import { requestNotificationPermission, isAppInstalled } from '@/lib/pwa';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAdvancedTheme } from '@/contexts/AdvancedThemeContext';
-import AdvancedThemeCustomizer from './AdvancedThemeCustomizer';
 import { cn } from '@/lib/utils';
 import { responsiveClasses, getResponsiveFontSize } from '@/lib/responsive-utils';
-import { offlineDB } from '@/lib/offline-db';
-
-const THEME_COLORS = [
-  { 
-    name: 'Ocean', 
-    primary: { light: '210 60% 55%', dark: '210 60% 65%' },
-    secondary: { light: '260 40% 60%', dark: '260 40% 70%' },
-    accent: { light: '160 50% 55%', dark: '160 50% 65%' }
-  },
-  { 
-    name: 'Sunset', 
-    primary: { light: '25 90% 60%', dark: '25 90% 70%' },
-    secondary: { light: '10 80% 50%', dark: '10 80% 60%' },
-    accent: { light: '45 90% 55%', dark: '45 90% 65%' }
-  },
-  { 
-    name: 'Forest', 
-    primary: { light: '140 60% 45%', dark: '140 60% 60%' },
-    secondary: { light: '120 50% 40%', dark: '120 50% 55%' },
-    accent: { light: '80 60% 50%', dark: '80 60% 65%' }
-  },
-  { 
-    name: 'Lavender', 
-    primary: { light: '260 60% 65%', dark: '260 60% 75%' },
-    secondary: { light: '280 50% 60%', dark: '280 50% 70%' },
-    accent: { light: '240 60% 70%', dark: '240 60% 80%' }
-  },
-  { 
-    name: 'Rose', 
-    primary: { light: '340 70% 60%', dark: '340 70% 70%' },
-    secondary: { light: '320 60% 55%', dark: '320 60% 65%' },
-    accent: { light: '10 70% 65%', dark: '10 70% 75%' }
-  },
-];
+import { offlineDB } from '../lib/offline-db';
 
 export default function UserSettings() {
   const { currentUser } = useAuth();
-  const { isDarkMode, toggleDarkMode } = useAdvancedTheme();
   
   const [preferences, setPreferences] = usePersistedState('preferences', {
     notifications: true,
@@ -66,8 +31,6 @@ export default function UserSettings() {
     fontSize: 'medium',
     animationsEnabled: true,
   });
-
-  const [selectedTheme, setSelectedTheme] = usePersistedState('selectedTheme', THEME_COLORS[0]);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [isInstalled, setIsInstalled] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -115,24 +78,7 @@ export default function UserSettings() {
     }
   };
 
-  const applyTheme = useCallback((themeColors: typeof THEME_COLORS[0]) => {
-    const root = document.documentElement;
-    const isDark = isDarkMode;
-    
-    // Apply theme colors based on current light/dark mode
-    root.style.setProperty('--primary', isDark ? themeColors.primary.dark : themeColors.primary.light);
-    root.style.setProperty('--secondary', isDark ? themeColors.secondary.dark : themeColors.secondary.light);
-    root.style.setProperty('--accent', isDark ? themeColors.accent.dark : themeColors.accent.light);
-    
-    setSelectedTheme(themeColors);
-  }, [isDarkMode]);
 
-  // Re-apply theme colors when light/dark mode changes
-  useEffect(() => {
-    if (selectedTheme) {
-      applyTheme(selectedTheme);
-    }
-  }, [selectedTheme, applyTheme]);
 
   const installApp = async () => {
     if (!deferredPrompt) return;
@@ -205,7 +151,6 @@ export default function UserSettings() {
     // Export settings and preferences data
     const data = {
       preferences,
-      theme: selectedTheme,
       exportDate: new Date().toISOString(),
     };
     
@@ -219,347 +164,470 @@ export default function UserSettings() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="shadow-medium">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5 text-secondary" />
-            Theme Customization
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-4 max-w-4xl mx-auto">
+      {/* Success/Error Messages */}
+      {message && (
+        <Alert 
+          variant={message.type === 'success' ? 'default' : 'destructive'} 
+          className={`mb-4 transition-all duration-300 ${
+            message.type === 'success' 
+              ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300' 
+              : 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300'
+          }`}
+        >
+          <AlertDescription className="text-sm font-medium flex items-center gap-2">
+            {message.type === 'success' ? (
+              <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            )}
+            {message.text}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
+        <CardHeader className="pb-3 sm:pb-6 px-4 sm:px-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl font-semibold">
+            <Bell className="h-5 w-5 text-primary" />
+            Preferences & Settings
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {THEME_COLORS.map((themeColor) => (
-              <Card
-                key={themeColor.name}
-                className={cn(
-                  "cursor-pointer transition-all duration-200 hover:shadow-medium",
-                  selectedTheme.name === themeColor.name && "ring-2 ring-primary"
-                )}
-                onClick={() => applyTheme(themeColor)}
-              >
-                <CardContent className="p-3">
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="flex gap-1">
-                      <div 
-                        className="w-4 h-4 rounded-full" 
-                        style={{ backgroundColor: `hsl(${isDarkMode ? themeColor.primary.dark : themeColor.primary.light})` }}
-                      />
-                      <div 
-                        className="w-4 h-4 rounded-full" 
-                        style={{ backgroundColor: `hsl(${isDarkMode ? themeColor.secondary.dark : themeColor.secondary.light})` }}
-                      />
-                      <div 
-                        className="w-4 h-4 rounded-full" 
-                        style={{ backgroundColor: `hsl(${isDarkMode ? themeColor.accent.dark : themeColor.accent.light})` }}
-                      />
-                    </div>
-                    <span className="text-xs font-medium">{themeColor.name}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        <CardContent className="space-y-6 p-4 sm:p-6">
+          {/* Notifications Section */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Notifications</h3>
+            
+            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+              <div className="space-y-1 flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm sm:text-base font-medium">Push Notifications</Label>
+                  {notificationPermission === 'denied' && (
+                    <Badge variant="destructive" className="text-xs px-1.5 py-0.5">Blocked</Badge>
+                  )}
+                  {notificationPermission === 'granted' && preferences.notifications && (
+                    <Badge variant="default" className="text-xs px-1.5 py-0.5">Active</Badge>
+                  )}
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Receive real-time reminders for tasks, classes, and deadlines
+                </p>
+              </div>
+              <Switch
+                checked={preferences.notifications && notificationPermission === 'granted'}
+                onCheckedChange={handleNotificationToggle}
+                className="shrink-0"
+              />
+            </div>
+
+            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+              <div className="space-y-1 flex-1 min-w-0">
+                <Label className="text-sm sm:text-base font-medium">Email Notifications</Label>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Receive email reminders for upcoming tasks and deadlines
+                </p>
+              </div>
+              <Switch
+                checked={preferences.emailNotifications}
+                onCheckedChange={(checked) => 
+                  setPreferences(prev => ({ ...prev, emailNotifications: checked }))
+                }
+                className="shrink-0"
+              />
+            </div>
+          </div>
+
+          {/* Interface & Display */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Interface & Display</h3>
+            
+            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+              <div className="space-y-1 flex-1 min-w-0">
+                <Label className="text-sm sm:text-base font-medium">Compact View</Label>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Show more items in less space for better overview
+                </p>
+              </div>
+              <Switch
+                checked={preferences.compactView}
+                onCheckedChange={(checked) => 
+                  setPreferences(prev => ({ ...prev, compactView: checked }))
+                }
+                className="shrink-0"
+              />
+            </div>
+
+            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+              <div className="space-y-1 flex-1 min-w-0">
+                <Label className="text-sm sm:text-base font-medium">Show Completed Tasks</Label>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Display completed tasks in your task lists
+                </p>
+              </div>
+              <Switch
+                checked={preferences.showCompletedTasks}
+                onCheckedChange={(checked) => 
+                  setPreferences(prev => ({ ...prev, showCompletedTasks: checked }))
+                }
+                className="shrink-0"
+              />
+            </div>
+
+            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+              <div className="space-y-1 flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm sm:text-base font-medium">Animations</Label>
+                  {preferences.animationsEnabled && (
+                    <Badge variant="secondary" className="text-xs px-1.5 py-0.5">Enabled</Badge>
+                  )}
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Enable smooth transitions and visual effects
+                </p>
+              </div>
+              <Switch
+                checked={preferences.animationsEnabled}
+                onCheckedChange={(checked) => 
+                  setPreferences(prev => ({ ...prev, animationsEnabled: checked }))
+                }
+                className="shrink-0"
+              />
+            </div>
+          </div>
+
+          {/* Data & Behavior */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Data & Behavior</h3>
+            
+            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+              <div className="space-y-1 flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm sm:text-base font-medium">Auto-save</Label>
+                  {preferences.autoSave && (
+                    <Badge variant="default" className="text-xs px-1.5 py-0.5">Active</Badge>
+                  )}
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Automatically save changes as you type
+                </p>
+              </div>
+              <Switch
+                checked={preferences.autoSave}
+                onCheckedChange={(checked) => 
+                  setPreferences(prev => ({ ...prev, autoSave: checked }))
+                }
+                className="shrink-0"
+              />
+            </div>
+
+            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+              <div className="space-y-1 flex-1 min-w-0">
+                <Label className="text-sm sm:text-base font-medium">Sound Effects</Label>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Play audio feedback for task completion and alerts
+                </p>
+              </div>
+              <Switch
+                checked={preferences.soundEffects}
+                onCheckedChange={(checked) => 
+                  setPreferences(prev => ({ ...prev, soundEffects: checked }))
+                }
+                className="shrink-0"
+              />
+            </div>
+          </div>
+
+          {/* Time & Calendar */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Time & Calendar</h3>
+            
+            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+              <div className="space-y-1 flex-1 min-w-0">
+                <Label className="text-sm sm:text-base font-medium">Week Starts Monday</Label>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Calendar weeks start on Monday instead of Sunday
+                </p>
+              </div>
+              <Switch
+                checked={preferences.weekStartsMonday}
+                onCheckedChange={(checked) => 
+                  setPreferences(prev => ({ ...prev, weekStartsMonday: checked }))
+                }
+                className="shrink-0"
+              />
+            </div>
+
+            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+              <div className="space-y-1 flex-1 min-w-0">
+                <Label className="text-sm sm:text-base font-medium">24-hour Time Format</Label>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Display time in 24-hour format (14:30) instead of 12-hour (2:30 PM)
+                </p>
+              </div>
+              <Switch
+                checked={preferences.timeFormat24h}
+                onCheckedChange={(checked) => 
+                  setPreferences(prev => ({ ...prev, timeFormat24h: checked }))
+                }
+                className="shrink-0"
+              />
+            </div>
+          </div>
+
+          {/* Accessibility & Localization */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Accessibility & Localization</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="language" className="text-sm font-medium">Language</Label>
+                <Select
+                  value={preferences.language}
+                  onValueChange={(value) => setPreferences(prev => ({ ...prev, language: value }))}
+                >
+                  <SelectTrigger className="w-full h-11">
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">🇺🇸 English</SelectItem>
+                    <SelectItem value="es">🇪🇸 Español</SelectItem>
+                    <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                    <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
+                    <SelectItem value="pt">🇧🇷 Português</SelectItem>
+                    <SelectItem value="it">🇮🇹 Italiano</SelectItem>
+                    <SelectItem value="ja">🇯🇵 日本語</SelectItem>
+                    <SelectItem value="ko">🇰🇷 한국어</SelectItem>
+                    <SelectItem value="zh">🇨🇳 中文</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fontSize" className="text-sm font-medium">Font Size</Label>
+                <Select
+                  value={preferences.fontSize}
+                  onValueChange={(value) => setPreferences(prev => ({ ...prev, fontSize: value }))}
+                >
+                  <SelectTrigger className="w-full h-11">
+                    <SelectValue placeholder="Select font size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="small">Small (12px)</SelectItem>
+                    <SelectItem value="medium">Medium (14px)</SelectItem>
+                    <SelectItem value="large">Large (16px)</SelectItem>
+                    <SelectItem value="extra-large">Extra Large (18px)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="shadow-medium">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-accent" />
-            Preferences
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive reminders for tasks and classes
-              </p>
-            </div>
-            <Switch
-              checked={preferences.notifications && notificationPermission === 'granted'}
-              onCheckedChange={handleNotificationToggle}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Dark Mode</Label>
-              <p className="text-sm text-muted-foreground">
-                Toggle between light and dark appearance
-              </p>
-            </div>
-            <Switch
-              checked={isDarkMode}
-              onCheckedChange={toggleDarkMode}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Compact View</Label>
-              <p className="text-sm text-muted-foreground">
-                Show more items in less space
-              </p>
-            </div>
-            <Switch
-              checked={preferences.compactView}
-              onCheckedChange={(checked) => 
-                setPreferences(prev => ({ ...prev, compactView: checked }))
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Show Completed Tasks</Label>
-              <p className="text-sm text-muted-foreground">
-                Display completed tasks in task list
-              </p>
-            </div>
-            <Switch
-              checked={preferences.showCompletedTasks}
-              onCheckedChange={(checked) => 
-                setPreferences(prev => ({ ...prev, showCompletedTasks: checked }))
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Auto-save</Label>
-              <p className="text-sm text-muted-foreground">
-                Automatically save changes as you type
-              </p>
-            </div>
-            <Switch
-              checked={preferences.autoSave}
-              onCheckedChange={(checked) => 
-                setPreferences(prev => ({ ...prev, autoSave: checked }))
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Sound Effects</Label>
-              <p className="text-sm text-muted-foreground">
-                Play sounds for task completion and alerts
-              </p>
-            </div>
-            <Switch
-              checked={preferences.soundEffects}
-              onCheckedChange={(checked) => 
-                setPreferences(prev => ({ ...prev, soundEffects: checked }))
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Email Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive email reminders for upcoming tasks
-              </p>
-            </div>
-            <Switch
-              checked={preferences.emailNotifications}
-              onCheckedChange={(checked) => 
-                setPreferences(prev => ({ ...prev, emailNotifications: checked }))
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Week Starts Monday</Label>
-              <p className="text-sm text-muted-foreground">
-                Calendar weeks start on Monday instead of Sunday
-              </p>
-            </div>
-            <Switch
-              checked={preferences.weekStartsMonday}
-              onCheckedChange={(checked) => 
-                setPreferences(prev => ({ ...prev, weekStartsMonday: checked }))
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>24-hour Time Format</Label>
-              <p className="text-sm text-muted-foreground">
-                Display time in 24-hour format (14:30) instead of 12-hour (2:30 PM)
-              </p>
-            </div>
-            <Switch
-              checked={preferences.timeFormat24h}
-              onCheckedChange={(checked) => 
-                setPreferences(prev => ({ ...prev, timeFormat24h: checked }))
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Animations</Label>
-              <p className="text-sm text-muted-foreground">
-                Enable smooth transitions and animations
-              </p>
-            </div>
-            <Switch
-              checked={preferences.animationsEnabled}
-              onCheckedChange={(checked) => 
-                setPreferences(prev => ({ ...prev, animationsEnabled: checked }))
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="language">Language</Label>
-            <select
-              id="language"
-              value={preferences.language}
-              onChange={(e) => setPreferences(prev => ({ ...prev, language: e.target.value }))}
-              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-              <option value="en">English</option>
-              <option value="es">Español</option>
-              <option value="fr">Français</option>
-              <option value="de">Deutsch</option>
-              <option value="pt">Português</option>
-              <option value="it">Italiano</option>
-              <option value="ja">日本語</option>
-              <option value="ko">한국어</option>
-              <option value="zh">中文</option>
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="fontSize">Font Size</Label>
-            <select
-              id="fontSize"
-              value={preferences.fontSize}
-              onChange={(e) => setPreferences(prev => ({ ...prev, fontSize: e.target.value }))}
-              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-              <option value="extra-large">Extra Large</option>
-            </select>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-medium">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Smartphone className="h-5 w-5 text-accent" />
+      <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl font-semibold">
+            <Smartphone className="h-5 w-5 text-primary" />
             App Installation
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Install as App</Label>
-              <p className="text-sm text-muted-foreground">
-                {isInstalled ? 'App is installed on your device' : 'Install Zentry on your device for a native app experience'}
+        <CardContent className="space-y-6 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="space-y-2 flex-1">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm sm:text-base font-medium">Progressive Web App</Label>
+                {isInstalled ? (
+                  <Badge variant="default" className="text-xs px-2 py-1">
+                    <Check className="h-3 w-3 mr-1" />
+                    Installed
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs px-2 py-1">
+                    <Download className="h-3 w-3 mr-1" />
+                    Available
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                {isInstalled 
+                  ? 'Zentry is installed on your device for the best experience'
+                  : 'Install Zentry as a native app for enhanced performance and offline access'
+                }
               </p>
             </div>
-            {!isInstalled && deferredPrompt && (
-              <Button 
-                variant="default"
-                onClick={installApp}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Install App
-              </Button>
-            )}
-            {!isInstalled && !deferredPrompt && (
-              <Badge variant="secondary">Not Available</Badge>
-            )}
-            {isInstalled && (
-              <Badge variant="secondary">Installed</Badge>
-            )}
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              {!isInstalled && deferredPrompt && (
+                <Button 
+                  onClick={installApp}
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium"
+                  size="sm"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Install App
+                </Button>
+              )}
+              
+              {!isInstalled && !deferredPrompt && (
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <Monitor className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">
+                    Installation prompt not available.<br />
+                    Use your browser's "Add to Home Screen" option.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
           
-          <div className="text-sm text-muted-foreground space-y-2">
-            <p><strong>Benefits of installing:</strong></p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>Works offline for viewing saved data</li>
-              <li>Faster loading times</li>
-              <li>Native app-like experience</li>
-              <li>Push notifications for reminders</li>
-            </ul>
-          </div>
+          {!isInstalled && (
+            <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border">
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-primary" />
+                Installation Benefits
+              </h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></div>
+                  Works completely offline with cached data
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></div>
+                  Faster loading times and smoother performance
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 flex-shrink-0"></div>
+                  Native app-like experience with full-screen mode
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0"></div>
+                  Push notifications for task reminders
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></div>
+                  Access from your device's home screen
+                </li>
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <Card className="shadow-medium">
-        <CardHeader>
-          <CardTitle>Data & Privacy</CardTitle>
+      <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl font-semibold">
+            <Settings className="h-5 w-5 text-primary" />
+            Data & Privacy
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Export Your Data</Label>
-              <p className="text-sm text-muted-foreground">
-                Download all your tasks, notes, and settings
+        <CardContent className="space-y-6 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-2 flex-1">
+              <Label className="text-sm sm:text-base font-medium">Export Your Data</Label>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Download all your tasks, notes, schedules, and settings as JSON
               </p>
             </div>
-            <Button onClick={exportData} variant="outline">
+            <Button 
+              onClick={exportData} 
+              variant="outline"
+              className="w-full sm:w-auto hover:bg-primary hover:text-primary-foreground transition-colors"
+              size="sm"
+            >
               <Download className="h-4 w-4 mr-2" />
-              Export
+              Export Data
             </Button>
           </div>
 
-          <div className="pt-4 border-t">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label>App Version</Label>
-                <p className="text-sm text-muted-foreground">
-                  Productivity PWA v1.0
-                </p>
+          <div className="pt-4 border-t border-border/60">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-2 flex-1">
+                <Label className="text-sm sm:text-base font-medium">App Information</Label>
+                <div className="space-y-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Zentry Productivity PWA v1.2.0
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Built with React, TypeScript, and Firebase
+                  </p>
+                </div>
               </div>
-              <Badge variant="outline">Latest</Badge>
+              <div className="flex gap-2">
+                <Badge variant="default" className="text-xs">
+                  <Check className="h-3 w-3 mr-1" />
+                  Latest
+                </Badge>
+                <Badge variant="secondary" className="text-xs">PWA</Badge>
+              </div>
             </div>
+          </div>
+
+          <div className="p-4 rounded-lg bg-muted/30 border">
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-blue-500" />
+              Privacy Note
+            </h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your data is stored locally on your device and synchronized with Firebase. 
+              You have full control over your data and can export or delete it at any time.
+            </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Save All Settings */}
+      {/* Save All Settings - Only show if auto-save is disabled */}
       {!preferences.autoSave && (
-        <Card className="shadow-medium border-primary/20">
-          <CardContent className={cn(responsiveClasses.padding.card, "text-center")}>
-            <div className="space-y-4">
-              <div>
-                <h3 className={cn("font-semibold text-primary", getResponsiveFontSize(preferences.fontSize))}>
-                  Save All Settings
+        <Card className="shadow-md hover:shadow-lg transition-shadow duration-200 border-primary/20 bg-gradient-to-br from-primary/5 to-purple-500/5">
+          <CardContent className="text-center p-6">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Save className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-primary">
+                  Manual Save Required
                 </h3>
-                <p className={cn("text-muted-foreground", responsiveClasses.text.small)}>
-                  Save all your preferences and theme settings
+                <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  Auto-save is disabled. Click the button below to save all your preferences and settings.
                 </p>
               </div>
               
-              <Button 
-                onClick={saveAllSettings} 
-                disabled={loading}
-                size="lg"
-                className={cn(responsiveClasses.button.responsive, "bg-gradient-primary text-white font-medium shadow-medium hover:shadow-large")}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {loading ? 'Saving All Settings...' : 'Save All Settings'}
-              </Button>
-              
-              {preferences.autoSave && (
-                <Badge variant="secondary" className="mt-2">
-                  Auto-save enabled - changes saved automatically
-                </Badge>
-              )}
+              <div className="space-y-3">
+                <Button 
+                  onClick={saveAllSettings} 
+                  disabled={loading}
+                  size="lg"
+                  className="w-full sm:w-auto bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
+                      Saving Settings...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save All Settings
+                    </>
+                  )}
+                </Button>
+                
+                <p className="text-xs text-muted-foreground">
+                  Or enable auto-save above to save changes automatically
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Auto-save Status */}
+      {preferences.autoSave && (
+        <Card className="shadow-md border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10">
+          <CardContent className="text-center p-4">
+            <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-400">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span className="text-sm font-medium">Auto-save enabled - all changes are saved automatically</span>
             </div>
           </CardContent>
         </Card>

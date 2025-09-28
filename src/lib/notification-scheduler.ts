@@ -53,9 +53,12 @@ class NotificationScheduler {
     
     // Navigate to relevant page based on notification type
     if (data.type === 'task') {
-      window.location.hash = '/dashboard?tab=tasks';
+      window.location.href = '/dashboard?tab=tasks';
     } else if (data.type === 'schedule') {
-      window.location.hash = '/dashboard?tab=schedule';
+      window.location.href = '/dashboard?tab=schedule';
+    } else {
+      // Default navigation to home for authenticated users
+      window.location.href = '/';
     }
   }
 

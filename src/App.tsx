@@ -5,15 +5,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { AdvancedThemeProvider } from "./contexts/AdvancedThemeContext";
-import LandingPage from "./pages/Landing";
+import SmartHomePage from "./components/SmartHomePage";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
-
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { GoogleAuthRedirectHandler } from "./components/GoogleAuthRedirectHandler";
 import { registerServiceWorker, setupInstallPrompt } from "./lib/pwa";
 import { initOfflineDB } from "./lib/offline-db";
 import { notificationScheduler } from "./lib/notification-scheduler";
@@ -108,18 +107,19 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <AdvancedThemeProvider>
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+                <GoogleAuthRedirectHandler />
                 <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<LandingPage />} />
+                  {/* Smart Home Route - shows Landing for guests, Home for authenticated users */}
+                  <Route path="/" element={<SmartHomePage />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
+
                   
                   {/* Protected Routes */}
                   <Route 
@@ -141,7 +141,6 @@ const App = () => {
           </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>
-      </AdvancedThemeProvider>
     </ErrorBoundary>
   );
 };

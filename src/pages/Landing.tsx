@@ -7,28 +7,28 @@ import {
   FileText,
   Calendar,
   Smartphone,
-  Download,
-  Sun,
-  Moon
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
-import { useAdvancedTheme } from '@/contexts/AdvancedThemeContext';
-import { useThemePreferences } from '@/hooks/use-theme-preferences';
 import { responsiveClasses, cn } from '@/lib/responsive-utils';
-import { ThemeDebugPanel } from '@/components/ThemeDebugPanel';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { isDarkMode } = useAdvancedTheme();
-  const { toggleDarkMode, isToggling, themeStatus } = useThemePreferences();
+  const { currentUser, loading } = useAuth();
   const [showInstall, setShowInstall] = React.useState(false);
   const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
 
-  // Debug logging
-  console.log('Landing page isDarkMode:', isDarkMode);
+  // Safeguard: Redirect authenticated users to dashboard
+  React.useEffect(() => {
+    if (currentUser && !loading) {
+      console.log('⚠️ Authenticated user accessing Landing page, redirecting to dashboard...');
+      navigate('/dashboard', { replace: true });
+    }
+  }, [currentUser, loading, navigate]);
 
   React.useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
@@ -110,24 +110,6 @@ const LandingPage = () => {
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-3">
-              {/* Enhanced Theme Toggle Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleDarkMode}
-                disabled={isToggling || !themeStatus.initialized}
-                className={cn(
-                  "relative h-9 w-9 rounded-full hover:bg-accent/50 transition-all duration-300 border border-border/50",
-                  isToggling && "animate-pulse",
-                  !themeStatus.initialized && "opacity-50 cursor-not-allowed"
-                )}
-                aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode${themeStatus.isFollowingSystem ? ' (following system)' : ''}`}
-                title={`Current: ${themeStatus.currentThemeName} (${isDarkMode ? 'Dark' : 'Light'})\nSystem prefers: ${themeStatus.systemPrefersDark ? 'Dark' : 'Light'}`}
-              >
-                <Sun className={`h-4 w-4 transition-all duration-300 ${isDarkMode ? 'rotate-90 scale-0' : 'rotate-0 scale-100'} text-foreground ${isToggling ? 'animate-spin' : ''}`} />
-                <Moon className={`absolute h-4 w-4 transition-all duration-300 ${isDarkMode ? 'rotate-0 scale-100' : 'rotate-90 scale-0'} text-foreground ${isToggling ? 'animate-spin' : ''}`} />
-              </Button>
-              
               {/* Install Button */}
               {showInstall && (
                 <Button 
@@ -144,22 +126,18 @@ const LandingPage = () => {
 
             {/* Mobile Navigation */}
             <div className="flex md:hidden items-center gap-2">
-              {/* Enhanced Mobile Theme Toggle Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleDarkMode}
-                disabled={isToggling || !themeStatus.initialized}
-                className={cn(
-                  "relative h-8 w-8 rounded-full hover:bg-accent/50 transition-all duration-300 border border-border/50",
-                  isToggling && "animate-pulse",
-                  !themeStatus.initialized && "opacity-50 cursor-not-allowed"
-                )}
-                aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode${themeStatus.isFollowingSystem ? ' (following system)' : ''}`}
-              >
-                <Sun className={`h-4 w-4 transition-all duration-300 ${isDarkMode ? 'rotate-90 scale-0' : 'rotate-0 scale-100'} text-foreground ${isToggling ? 'animate-spin' : ''}`} />
-                <Moon className={`absolute h-4 w-4 transition-all duration-300 ${isDarkMode ? 'rotate-0 scale-100' : 'rotate-90 scale-0'} text-foreground ${isToggling ? 'animate-spin' : ''}`} />
-              </Button>
+              {/* Mobile Install Button */}
+              {showInstall && (
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  onClick={handleInstall}
+                  className="font-medium transition-all"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Install
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -184,7 +162,6 @@ const LandingPage = () => {
                 className={cn(responsiveClasses.button.responsive, "bg-gradient-primary hover:opacity-90 text-white font-semibold shadow-medium hover:shadow-large transition-all")}
               >
                 Sign Up
-                <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
               
               <Button 
@@ -270,13 +247,16 @@ const LandingPage = () => {
             
             <div className="flex gap-6 text-sm text-muted-foreground">
               <span>© 2025 Zentry. All rights reserved.</span>
+              <button 
+                onClick={() => navigate('/diagnostics')}
+                className="text-muted-foreground/60 hover:text-primary transition-colors text-xs underline"
+              >
+                Firebase Diagnostics
+              </button>
             </div>
           </div>
         </div>
       </footer>
-      
-      {/* Theme Debug Panel - For Development */}
-      {process.env.NODE_ENV === 'development' && <ThemeDebugPanel />}
     </div>
   );
 };
