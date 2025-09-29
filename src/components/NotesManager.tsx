@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit3, Trash2, FileText, Tag, Cloud } from 'lucide-react';
+import { Plus, Edit3, Trash2, FileText, Tag, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,6 @@ import { responsiveClasses } from '@/lib/responsive-utils';
 export default function NotesManager() {
   const { currentUser: user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isCreating, setIsCreating] = useState(false);
   const [editingNote, setEditingNote] = useState<string | null>(null);
@@ -130,11 +129,9 @@ export default function NotesManager() {
   };
 
   const filteredNotes = notes.filter(note => {
-    const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         note.content.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || note.category === selectedCategory;
     
-    return matchesSearch && matchesCategory;
+    return matchesCategory;
   });
 
   const categories = Array.from(new Set([...notes.map(note => note.category), 'General', 'School', 'Work', 'Personal']));
@@ -167,15 +164,6 @@ export default function NotesManager() {
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
           <div className="flex flex-col gap-2 sm:gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search notes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 text-sm sm:text-base"
-              />
-            </div>
             <div className="flex gap-2 sm:gap-3">
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="flex-1 sm:w-40 text-sm">
@@ -354,7 +342,7 @@ export default function NotesManager() {
             <CardContent className="p-6 sm:p-8 text-center">
               <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
               <p className="text-sm sm:text-base text-muted-foreground">
-                {searchTerm ? 'No notes found matching your search.' : 'No notes yet.'}
+                No notes yet.
               </p>
             </CardContent>
           </Card>

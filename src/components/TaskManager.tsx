@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Check, Clock, Calendar, Search, Bell, BellOff, Cloud } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, Clock, Calendar, Bell, BellOff, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -29,7 +29,6 @@ export default function TaskManager() {
   const [newTaskDueTime, setNewTaskDueTime] = useState('');
   const [newTaskReminder, setNewTaskReminder] = useState(false);
   const [newTaskReminderMinutes, setNewTaskReminderMinutes] = useState(15);
-  const [searchTerm, setSearchTerm] = useState('');
   const [editingTask, setEditingTask] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [offlineReady, setOfflineReady] = useState(false);
@@ -316,17 +315,14 @@ export default function TaskManager() {
   };
 
   const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.category.toLowerCase().includes(searchTerm.toLowerCase());
-    
     // If showCompletedTasks is disabled, hide completed tasks unless explicitly filtering for them
     if (!preferences.showCompletedTasks && task.completed && filter !== 'completed') {
       return false;
     }
     
-    if (filter === 'active') return !task.completed && matchesSearch;
-    if (filter === 'completed') return task.completed && matchesSearch;
-    return matchesSearch;
+    if (filter === 'active') return !task.completed;
+    if (filter === 'completed') return task.completed;
+    return true;
   });
 
   const categories = Array.from(new Set([...tasks.map(task => task.category), 'General', 'Work', 'School', 'Personal']));
@@ -358,20 +354,7 @@ export default function TaskManager() {
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
           <div className="space-y-3 sm:space-y-4">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search tasks..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 text-sm sm:text-base min-h-[44px] touch-manipulation"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-3 sm:space-y-4">
-              {/* Main task input row - responsive layout */}
+            {/* Main task input row - responsive layout */}
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <Input
                   placeholder="Add a new task..."
@@ -474,7 +457,6 @@ export default function TaskManager() {
                 </div>
               </div>
             </div>
-          </div>
 
           <div className="flex flex-wrap gap-2 sm:gap-3">
             {(['all', 'active', 'completed'] as const).map((filterType) => (

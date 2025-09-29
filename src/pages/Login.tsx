@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ const LoginPage = () => {
   const { login, loginWithGoogle, currentUser, loading: authLoading } = useAuth();
   
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   
@@ -52,7 +52,9 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      await login(formData.email, formData.password);
+      // Convert username to email format for Firebase Auth
+      const email = `${formData.username}@zentry.local`;
+      await login(email, formData.password);
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
@@ -110,17 +112,17 @@ const LoginPage = () => {
 
 
   return (
-    <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
-          <p className="text-muted-foreground font-medium">Sign in to your Zentry account</p>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
+          <p className="text-gray-600 font-medium">Sign in to your Zentry account</p>
         </div>
 
-        <Card className="glass-modal shadow-large">
+        <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl text-center font-semibold text-card-foreground">Log In</CardTitle>
+            <CardTitle className="text-xl text-center font-semibold text-gray-900">Log In</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {error && (
@@ -189,19 +191,21 @@ const LoginPage = () => {
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
+                <Label htmlFor="username" className="text-foreground font-medium">Username</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={formData.email}
+                    id="username"
+                    name="username"
+                    type="text"
+                    placeholder="Enter your username"
+                    value={formData.username}
                     onChange={handleInputChange}
                     className="pl-10"
                     required
                     disabled={loading}
+                    pattern="[a-zA-Z0-9_-]+"
+                    title="Username can only contain letters, numbers, underscores, and hyphens"
                   />
                 </div>
               </div>

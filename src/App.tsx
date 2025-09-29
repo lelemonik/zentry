@@ -13,6 +13,8 @@ import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { GoogleAuthRedirectHandler } from "./components/GoogleAuthRedirectHandler";
@@ -125,6 +127,8 @@ const App = () => {
                       <Route path="/" element={<SmartHomePage />} />
                       <Route path="/login" element={<LoginPage />} />
                       <Route path="/signup" element={<SignupPage />} />
+                      <Route path="/privacy" element={<Privacy />} />
+                      <Route path="/terms" element={<Terms />} />
 
                       
                       {/* Protected Routes */}

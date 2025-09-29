@@ -18,7 +18,7 @@ const SignupPage = () => {
   
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    username: '',
     password: '',
     confirmPassword: ''
   });
@@ -54,7 +54,6 @@ const SignupPage = () => {
   const validatePassword = (password: string) => {
     const requirements = [
       { test: password.length >= 8, text: "At least 8 characters" },
-      { test: /[A-Z]/.test(password), text: "One uppercase letter" },
       { test: /[a-z]/.test(password), text: "One lowercase letter" },
       { test: /\d/.test(password), text: "One number" },
     ];
@@ -84,10 +83,23 @@ const SignupPage = () => {
       return;
     }
 
+    // Username validation
+    if (!/^[a-zA-Z0-9_-]+$/.test(formData.username)) {
+      setError('Username can only contain letters, numbers, underscores, and hyphens');
+      return;
+    }
+
+    if (formData.username.length < 3) {
+      setError('Username must be at least 3 characters long');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await register(formData.email, formData.password, formData.name);
+      // For username-based signup, we'll use username@zentry.local as email format
+      const email = `${formData.username}@zentry.local`;
+      await register(email, formData.password, formData.name);
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -145,17 +157,17 @@ const SignupPage = () => {
 
 
   return (
-    <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Join Zentry</h1>
-          <p className="text-muted-foreground font-medium">Start your productivity journey today</p>
+          <h1 className="text-2xl font-bold text-gray-900">Join Zentry</h1>
+          <p className="text-gray-600 font-medium">Start your productivity journey today</p>
         </div>
 
-        <Card className="glass-modal shadow-large">
+        <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl text-center font-semibold text-card-foreground">Create Account</CardTitle>
+            <CardTitle className="text-xl text-center font-semibold text-gray-900">Create Account</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {error && (
@@ -242,21 +254,34 @@ const SignupPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
+                <Label htmlFor="username" className="text-foreground font-medium">Username</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={formData.email}
+                    id="username"
+                    name="username"
+                    type="text"
+                    placeholder="Choose a username"
+                    value={formData.username}
                     onChange={handleInputChange}
                     className="pl-10"
                     required
                     disabled={loading}
+                    minLength={3}
+                    pattern="[a-zA-Z0-9_-]+"
+                    title="Username must be at least 3 characters and can only contain letters, numbers, underscores, and hyphens"
                   />
                 </div>
+                {formData.username && (
+                  <div className="space-y-1">
+                    {formData.username.length < 3 && (
+                      <p className="text-xs text-destructive">Username must be at least 3 characters long</p>
+                    )}
+                    {formData.username && !/^[a-zA-Z0-9_-]+$/.test(formData.username) && (
+                      <p className="text-xs text-destructive">Username can only contain letters, numbers, underscores, and hyphens</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

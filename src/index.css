@@ -7,37 +7,37 @@
 @layer base {
   :root {
     /* Glassmorphism Background - Soft pink/coral theme */
-    --background: 0 0% 98%;
-    --foreground: 210 11% 15%;
+    --background: 0 0% 97%;
+    --foreground: 0 0% 20%;
     
-    /* Primary Brand Colors - Sophisticated neutral theme matching palette */
-    --primary: 0 0% 27%; /* Machine Gun Metal #454545 */
-    --primary-light: 0 0% 35%;
-    --primary-foreground: 0 0% 98%; /* Albescent White */
+    /* Primary Brand Colors - Clean modern mobile design */
+    --primary: 0 0% 60%; /* Modern gray buttons */
+    --primary-light: 0 0% 70%;
+    --primary-foreground: 0 0% 98%;
     
     /* Secondary - Clean whites and light grays */
-    --secondary: 0 0% 96%; /* Albescent White #f6f6f6 */
-    --secondary-light: 0 0% 94%;
-    --secondary-foreground: 0 0% 27%;
+    --secondary: 0 0% 95%;
+    --secondary-light: 0 0% 93%;
+    --secondary-foreground: 0 0% 25%;
     
-    /* Accent - Ashlite */
-    --accent: 0 0% 47%; /* Ashite #787878 */
-    --accent-light: 0 0% 55%;
-    --accent-foreground: 0 0% 98%;
+    /* Accent - Modern neutral accent */
+    --accent: 0 0% 85%;
+    --accent-light: 0 0% 88%;
+    --accent-foreground: 0 0% 25%;
     
-    /* Success - Neutral success tone */
-    --success: 0 0% 27%;
-    --success-foreground: 0 0% 96%;
+    /* Success - Modern success tone */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
     
-    /* Warning - Neutral warning */
-    --warning: 0 0% 47%;
-    --warning-foreground: 0 0% 96%;
+    /* Warning - Modern warning */
+    --warning: 0 0% 65%;
+    --warning-foreground: 0 0% 98%;
     
-    /* Muted & Neutral - Clean gray palette matching Placebo */
-    --muted: 0 0% 96%; /* Placebo #f6f6f6 */
-    --muted-foreground: 0 0% 47%; /* Ashlite */
-    --border: 0 0% 89%;
-    --input: 0 0% 98%; /* Albescent White */
+    /* Muted & Neutral - Clean modern grays */
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 55%;
+    --border: 0 0% 88%;
+    --input: 0 0% 96%;
     --ring: 0 0% 27%; /* Machine Gun Metal */
     
     /* Cards & Surfaces - Glass effect with neutral tones */
@@ -365,14 +365,11 @@
 
 /* Glassmorphism Utilities */
 .glass-card {
-  background: hsla(0, 0%, 96%, 0.8); /* Placebo with transparency */
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid hsla(0, 0%, 89%, 0.5);
-  box-shadow: var(--shadow-glass);
+  background: hsl(0 0% 98%);
+  border: 1px solid hsl(0 0% 88%);
+  box-shadow: 0 4px 16px hsla(0, 0%, 0%, 0.06);
   border-radius: 16px;
   position: relative;
-  overflow: hidden;
 }
 
 .glass-card::before {
@@ -407,37 +404,30 @@
 }
 
 .glass-button {
-  background: linear-gradient(135deg, 
-    hsla(0, 0%, 27%, 0.9) 0%, 
-    hsla(0, 0%, 35%, 0.9) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid hsla(0, 0%, 30%, 0.4);
-  box-shadow: 0 8px 24px hsla(0, 0%, 20%, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: hsl(0 0% 60%);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .glass-button:hover {
-  background: linear-gradient(135deg, 
-    hsla(0, 0%, 32%, 0.95) 0%, 
-    hsla(0, 0%, 40%, 0.95) 100%);
-  box-shadow: 0 12px 32px hsla(0, 0%, 20%, 0.3);
-  transform: translateY(-2px);
+  background: hsl(0 0% 55%);
+  transform: translateY(-1px);
 }
 
 .glass-input {
-  background: hsla(0, 0%, 98%, 0.85); /* Albescent White */
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid hsla(0, 0%, 89%, 0.7);
+  background: hsl(0 0% 96%);
+  border: 1px solid hsl(0 0% 88%);
   border-radius: 12px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
 }
 
 .glass-input:focus {
-  background: hsla(0, 0%, 99%, 0.95);
-  border-color: hsla(0, 0%, 27%, 0.5); /* Machine Gun Metal focus */
-  box-shadow: 0 0 0 3px hsla(0, 0%, 27%, 0.1);
+  background: hsl(0 0% 98%);
+  border-color: hsl(0 0% 70%);
+  outline: none;
 }
 
 .glass-sidebar {
@@ -449,13 +439,10 @@
 }
 
 .glass-modal {
-  background: hsla(0, 0%, 98%, 0.95); /* Albescent White */
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(32px);
-  border: 1px solid hsla(0, 0%, 89%, 0.7);
-  box-shadow: 0 24px 64px hsla(0, 0%, 20%, 0.12);
-  border-radius: 20px;
-  animation: gentleFloat 4s ease-in-out infinite;
+  background: hsl(0 0% 98%);
+  border: 1px solid hsl(0 0% 88%);
+  box-shadow: 0 8px 24px hsla(0, 0%, 0%, 0.08);
+  border-radius: 16px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -465,107 +452,77 @@
 }
 
 .gradient-bg {
-  background: 
-    linear-gradient(135deg, 
-      hsl(0 0% 97%) 0%, 
-      hsl(0 0% 92%) 25%, 
-      hsl(0 0% 88%) 50%, 
-      hsl(0 0% 92%) 75%, 
-      hsl(0 0% 97%) 100%
-    ),
-    linear-gradient(45deg,
-      hsla(0, 0%, 90%, 0.3) 0%,
-      hsla(0, 0%, 95%, 0.2) 50%,
-      hsla(0, 0%, 90%, 0.3) 100%
-    );
-  background-size: 300% 300%, 100% 100%;
-  animation: gradientShift 6s ease-in-out infinite;
+  background: hsl(0 0% 97%);
   min-height: 100vh;
   position: relative;
-  overflow: hidden;
 }
 
-.gradient-bg::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    radial-gradient(circle 300px at 20% 30%, hsla(0, 0%, 80%, 0.2) 0%, transparent 50%),
-    radial-gradient(circle 250px at 80% 70%, hsla(0, 0%, 75%, 0.15) 0%, transparent 50%),
-    radial-gradient(circle 200px at 60% 10%, hsla(0, 0%, 85%, 0.18) 0%, transparent 50%);
-  animation: floatingSpheres 8s ease-in-out infinite;
-  pointer-events: none;
-}
 
-.gradient-bg::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    linear-gradient(45deg, 
-      hsla(0, 0%, 95%, 0.08) 0%, 
-      transparent 25%, 
-      hsla(0, 0%, 88%, 0.06) 50%, 
-      transparent 75%, 
-      hsla(0, 0%, 95%, 0.08) 100%
-    );
-  animation: shimmer 10s ease-in-out infinite;
-  pointer-events: none;
-}
+
+
 
 @keyframes float {
   0%, 100% { transform: translateY(0px) scale(1); opacity: 0.7; }
   50% { transform: translateY(-20px) scale(1.05); opacity: 1; }
 }
 
-@keyframes gradientShift {
+@keyframes silkyFlow {
   0%, 100% { 
-    background-position: 0% 0%, 0% 0%; 
+    background-position: 0% 0%, 0% 0%, 0% 0%; 
   }
-  25% {
-    background-position: 100% 0%, 25% 25%;
+  20% {
+    background-position: 30% 20%, 25% 15%, 20% 30%;
   }
-  50% {
-    background-position: 100% 100%, 50% 50%;
+  40% {
+    background-position: 70% 40%, 60% 45%, 80% 20%;
   }
-  75% {
-    background-position: 0% 100%, 75% 75%;
+  60% {
+    background-position: 100% 80%, 90% 70%, 40% 80%;
+  }
+  80% {
+    background-position: 60% 100%, 40% 90%, 70% 60%;
   }
 }
 
-@keyframes floatingSpheres {
+@keyframes gradientSpheres {
   0%, 100% { 
     transform: translate(0px, 0px) scale(1);
     opacity: 0.8;
   }
-  25% {
+  20% {
     transform: translate(-60px, -40px) scale(1.2);
     opacity: 1;
   }
-  50% { 
-    transform: translate(40px, -80px) scale(0.9);
-    opacity: 0.6;
+  40% { 
+    transform: translate(80px, -60px) scale(0.9);
+    opacity: 0.7;
   }
-  75% {
-    transform: translate(80px, -30px) scale(1.1);
+  60% {
+    transform: translate(-40px, 100px) scale(1.3);
     opacity: 0.9;
+  }
+  80% {
+    transform: translate(100px, 40px) scale(0.8);
+    opacity: 0.6;
   }
 }
 
-@keyframes shimmer {
+@keyframes gradientSpheresSecondary {
   0%, 100% { 
-    transform: translateX(-100%) skewX(-15deg);
-    opacity: 0.3;
+    transform: translate(0px, 0px) scale(1) rotate(0deg);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translate(120px, -80px) scale(0.7) rotate(90deg);
+    opacity: 0.9;
   }
   50% { 
-    transform: translateX(100%) skewX(-15deg);
-    opacity: 0.7;
+    transform: translate(-80px, 120px) scale(1.4) rotate(180deg);
+    opacity: 0.5;
+  }
+  75% {
+    transform: translate(-120px, -60px) scale(0.9) rotate(270deg);
+    opacity: 0.8;
   }
 }
 
@@ -639,16 +596,24 @@
 @media (prefers-reduced-motion: reduce) {
   .gradient-bg {
     animation: none !important;
-    background: var(--gradient-bg);
+    background: linear-gradient(145deg, 
+      hsl(45 25% 88%) 0%, 
+      hsl(35 20% 76%) 30%, 
+      hsl(30 22% 70%) 50%, 
+      hsl(40 24% 80%) 70%, 
+      hsl(50 30% 90%) 100%
+    );
   }
   
   .gradient-bg::before,
   .gradient-bg::after {
     animation: none !important;
-    opacity: 0.5;
+    opacity: 0.3;
+    transform: none !important;
   }
   
-  .glass-modal {
+  .glass-modal,
+  .glass-card {
     animation: none !important;
   }
 }
