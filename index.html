@@ -2,19 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Enhanced mobile viewport with safe area support -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Zentry - Productivity App</title>
     <meta name="description" content="A customizable PWA for task management, note-taking, and schedule organization designed for everyone." />
     <meta name="author" content="Zentry" />
+    
+    <!-- Mobile-specific optimizations -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="HandheldFriendly" content="true" />
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
     
-    <!-- PWA Theme -->
+    <!-- PWA Theme - Enhanced for mobile -->
     <meta name="theme-color" content="#454545" />
+    <meta name="msapplication-TileColor" content="#454545" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Zentry" />
+    <meta name="apple-touch-fullscreen" content="yes" />
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     
     <!-- PWA Icons -->
     <link rel="icon" href="/favicon.ico" />

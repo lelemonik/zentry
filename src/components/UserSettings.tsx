@@ -159,7 +159,7 @@ export default function UserSettings() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-2 sm:px-4 max-w-4xl mx-auto">
+    <div className="space-y-3 sm:space-y-6 px-1 sm:px-4 max-w-4xl mx-auto mobile-spacing-y">
       {/* Language & Font Size Demo */}
       <LanguageFontDemo />
       
@@ -169,29 +169,29 @@ export default function UserSettings() {
           variant={message.type === 'success' ? 'default' : 'destructive'} 
           className={`mb-4 transition-all duration-300 ${
             message.type === 'success' 
-              ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300' 
-              : 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300'
+              ? 'border-success bg-success/10 text-success dark:border-success dark:bg-success/20 dark:text-success' 
+              : 'border-destructive bg-destructive/10 text-destructive dark:border-destructive dark:bg-destructive/20 dark:text-destructive'
           }`}
         >
           <AlertDescription className="text-sm font-medium flex items-center gap-2">
             {message.type === 'success' ? (
-              <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <Check className="h-4 w-4 text-success" />
             ) : (
-              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <AlertCircle className="h-4 w-4 text-destructive" />
             )}
             {message.text}
           </AlertDescription>
         </Alert>
       )}
 
-      <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
-        <CardHeader className="pb-3 sm:pb-6 px-4 sm:px-6">
-          <CardTitle className={cn("flex items-center gap-2 font-semibold", fontSizeClasses.heading)}>
-            <Bell className="h-5 w-5 text-primary" />
+      <Card className="shadow-md hover:shadow-lg transition-shadow duration-200 hover-lift">
+        <CardHeader className="pb-2 sm:pb-6 px-3 sm:px-6 pt-3 sm:pt-6">
+          <CardTitle className={cn("flex items-center gap-2 font-semibold mobile-high-contrast text-sm sm:text-base", fontSizeClasses.heading)}>
+            <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             {t('preferences')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6 p-4 sm:p-6">
+        <CardContent className="space-y-4 sm:space-y-6 p-3 sm:p-6 pt-0 mobile-spacing-y">
           {/* Notifications Section */}
           <div className="space-y-4">
             <h3 className={cn("font-semibold text-muted-foreground uppercase tracking-wide", fontSizeClasses.small)}>
@@ -435,23 +435,23 @@ export default function UserSettings() {
               </h4>
               <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0"></div>
                   Works completely offline with cached data
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></div>
                   Faster loading times and smoother performance
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0"></div>
                   Native app-like experience with full-screen mode
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-warning flex-shrink-0"></div>
                   Push notifications for task reminders
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0"></div>
                   Access from your device's home screen
                 </li>
               </ul>
@@ -511,7 +511,7 @@ export default function UserSettings() {
 
           <div className="p-4 rounded-lg bg-muted/30 border">
             <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-blue-500" />
+              <AlertCircle className="h-4 w-4 text-primary" />
               Privacy Note
             </h4>
             <p className="text-xs text-muted-foreground leading-relaxed">
@@ -570,10 +570,10 @@ export default function UserSettings() {
 
       {/* Auto-save Status */}
       {preferences.autoSave && (
-        <Card className="shadow-md border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10">
+        <Card className="shadow-md border-success bg-success/5 dark:bg-success/10">
           <CardContent className="text-center p-4">
-            <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-400">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            <div className="flex items-center justify-center gap-2 text-success">
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
               <span className="text-sm font-medium">Auto-save enabled - all changes are saved automatically</span>
             </div>
           </CardContent>

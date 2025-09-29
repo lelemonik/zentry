@@ -542,18 +542,18 @@ const UserProfile = () => {
 
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-0 max-w-4xl mx-auto">
+    <div className="space-y-3 sm:space-y-6 p-2 sm:p-4 max-w-4xl mx-auto">
       {/* Profile Header */}
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <Card className="hover-lift">
+        <CardHeader className="pb-3 sm:pb-4 p-3 sm:p-6">
+          <div className="flex flex-col gap-3 sm:gap-4">
             <div className="flex flex-col gap-2">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl mobile-high-contrast">
                 <User className="h-5 w-5" />
                 Profile Information
                 {isAutoSaving && (
-                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full border border-blue-200 flex items-center gap-1">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-primary bg-primary/10 px-2 py-1 rounded-full border border-primary/20 flex items-center gap-1">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                     Auto-saving...
                   </span>
                 )}

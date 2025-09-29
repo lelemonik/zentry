@@ -157,19 +157,19 @@ const SignupPage = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-3 sm:p-4 safe-top safe-bottom">
+      <div className="w-full max-w-xs sm:max-w-md">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Join Zentry</h1>
-          <p className="text-gray-600 font-medium">Start your productivity journey today</p>
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Join Zentry</h1>
+          <p className="text-sm sm:text-base text-gray-600 font-medium">Start your productivity journey today</p>
         </div>
 
-        <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
-          <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl text-center font-semibold text-gray-900">Create Account</CardTitle>
+        <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm hover-lift">
+          <CardHeader className="space-y-1 pb-3 sm:pb-4 p-4 sm:p-6">
+            <CardTitle className="text-lg sm:text-xl text-center font-semibold text-gray-900">Create Account</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0">
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />

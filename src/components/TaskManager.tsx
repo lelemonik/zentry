@@ -386,11 +386,22 @@ export default function TaskManager() {
                   </Select>
                   <Button 
                     onClick={addTask} 
-                    className={cn("bg-gradient-primary hover:opacity-90 px-3 sm:px-4", animationClasses.transitionOpacity)}
+                    className={cn(
+                      "relative bg-primary text-primary-foreground hover:bg-primary/90 px-4 sm:px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 group overflow-hidden",
+                      animationClasses.transitionOpacity
+                    )}
                     disabled={!newTask.trim()}
                   >
-                    <Plus className="h-4 w-4" />
-                    <span className="sr-only sm:not-sr-only sm:ml-1">Add</span>
+                    <div className="relative flex items-center gap-2">
+                      <div className="bg-white/20 rounded-full p-1 group-hover:rotate-90 transition-transform duration-300">
+                        <Plus className="h-4 w-4" />
+                      </div>
+                      <span className="font-medium">Add Task</span>
+                      {newTaskReminder && (
+                        <Bell className="h-4 w-4 ml-1 animate-pulse text-warning" />
+                      )}
+                    </div>
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform translate-x-full group-hover:translate-x-[-200%] transition-transform duration-700"></div>
                   </Button>
                 </div>
               </div>
@@ -422,32 +433,66 @@ export default function TaskManager() {
                 </div>
                 
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
-                  <div className="flex items-center space-x-3 py-1">
+                  <div className={cn(
+                    "relative flex items-center space-x-4 p-4 rounded-xl border-2 transition-all duration-300",
+                    newTaskReminder 
+                      ? "bg-warning/10 border-warning shadow-md" 
+                      : !newTaskDueDate || !newTaskDueTime 
+                        ? "bg-muted border-border opacity-60" 
+                        : "bg-card border-dashed border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+                  )}>
+                    <div className={cn(
+                      "flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300",
+                      newTaskReminder 
+                        ? "bg-warning text-warning-foreground shadow-lg" 
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      <Bell className={cn(
+                        "h-5 w-5 transition-all duration-300",
+                        newTaskReminder && "animate-pulse"
+                      )} />
+                    </div>
+                    <div className="flex-1">
+                      <Label htmlFor="reminder-toggle" className="text-sm font-semibold text-gray-800 block cursor-pointer">
+                        Set Reminder
+                      </Label>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {!newTaskDueDate || !newTaskDueTime 
+                          ? "Set due date and time first" 
+                          : newTaskReminder 
+                            ? "You'll be notified before the deadline" 
+                            : "Get notified before your task is due"
+                        }
+                      </p>
+                    </div>
                     <Switch
                       id="reminder-toggle"
                       checked={newTaskReminder}
                       onCheckedChange={setNewTaskReminder}
                       disabled={!newTaskDueDate || !newTaskDueTime}
+                      className="data-[state=checked]:bg-warning"
                     />
-                    <Label htmlFor="reminder-toggle" className="text-xs sm:text-sm flex items-center gap-1 font-medium">
-                      <Bell className="h-3 w-3" />
-                      Reminder
-                    </Label>
+                    {newTaskReminder && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+                    )}
                   </div>
                   {newTaskReminder && (
-                    <div className="space-y-1">
-                      <Label className="text-xs sm:text-sm font-medium">Remind Before</Label>
+                    <div className="space-y-3 p-4 bg-warning/10 rounded-xl border-2 border-warning/30 shadow-sm">
+                      <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Reminder Timing
+                      </Label>
                       <Select 
                         value={newTaskReminderMinutes.toString()} 
                         onValueChange={(value) => setNewTaskReminderMinutes(parseInt(value))}
                       >
-                        <SelectTrigger className="w-full sm:w-28 text-xs sm:text-sm">
+                        <SelectTrigger className="w-full sm:w-36 text-sm bg-card border-border focus:border-ring focus:ring-ring">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="5">5 min</SelectItem>
-                          <SelectItem value="15">15 min</SelectItem>
-                          <SelectItem value="30">30 min</SelectItem>
+                          <SelectItem value="5">5 minutes before</SelectItem>
+                          <SelectItem value="15">15 minutes before</SelectItem>
+                          <SelectItem value="30">30 minutes before</SelectItem>
                           <SelectItem value="60">1 hour</SelectItem>
                           <SelectItem value="1440">1 day</SelectItem>
                         </SelectContent>
@@ -540,9 +585,9 @@ export default function TaskManager() {
                               </div>
                             )}
                             {task.hasReminder && task.dueDate && (
-                              <Badge variant="outline" className="text-xs h-5 px-2 flex-shrink-0">
-                                <Bell className="h-2 w-2 mr-1" />
-                                {task.reminderMinutes}min
+                              <Badge                     className="text-xs h-6 px-3 flex-shrink-0 bg-warning text-warning-foreground border-0 shadow-md hover:shadow-lg transition-all duration-300 reminder-active">
+                                <Bell className="h-3 w-3 mr-1.5 animate-pulse" />
+                                Remind {task.reminderMinutes}min before
                               </Badge>
                             )}
                           </div>
@@ -601,14 +646,27 @@ export default function TaskManager() {
                         size="sm"
                         onClick={() => toggleTaskReminder(task.id)}
                         className={cn(
-                          "h-7 w-7 sm:h-8 sm:w-8 p-0 transition-colors",
+                          "relative h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-lg transition-all duration-300 transform hover:scale-110 active:scale-95 group",
                           task.hasReminder 
-                            ? "text-primary hover:text-primary/80" 
-                            : "text-muted-foreground hover:text-foreground"
+                            ? "bg-warning text-warning-foreground shadow-lg hover:shadow-xl hover:opacity-90 reminder-active" 
+                            : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border-2 border-dashed border-border hover:border-muted-foreground/30"
                         )}
                         title={task.hasReminder ? "Disable reminder" : "Enable reminder"}
                       >
-                        {task.hasReminder ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
+                        <div className={cn(
+                          "transition-all duration-300",
+                          task.hasReminder && "animate-pulse"
+                        )}>
+                          {task.hasReminder ? (
+                            <Bell className="h-4 w-4 sm:h-5 sm:w-5 drop-shadow-sm" />
+                          ) : (
+                            <BellOff className="h-4 w-4 sm:h-5 sm:w-5" />
+                          )}
+                        </div>
+                        {task.hasReminder && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full notification-dot"></div>
+                        )}
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-full group-hover:translate-x-[-200%] transition-transform duration-500"></div>
                       </Button>
                     )}
 

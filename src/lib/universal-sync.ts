@@ -65,12 +65,12 @@ export interface Task {
   lastModified?: number;
 }
 
-export interface ClassItem {
+export interface EventItem {
   id: string;
-  name: string;
-  organizer: string;
+  title: string;
+  description: string;
   location: string;
-  day: string;
+  date: string; // ISO date string (YYYY-MM-DD)
   startTime: string;
   endTime: string;
   color: string;
@@ -78,8 +78,15 @@ export interface ClassItem {
   reminderMinutes: number;
   reminderId?: string;
   isRecurring: boolean;
+  eventType: 'class' | 'meeting' | 'appointment' | 'personal' | 'work' | 'other';
   createdAt?: Date;
   lastModified?: number;
+}
+
+// Keep ClassItem for backward compatibility, mapping to EventItem
+export interface ClassItem extends Omit<EventItem, 'title' | 'description' | 'eventType'> {
+  name: string;
+  organizer: string;
 }
 
 export class UniversalSync {
@@ -582,11 +589,11 @@ export const autoSaveTasks = async (userId: string, tasks: Task[], delay?: numbe
   return universalSync.autoSave('tasks', userId, { tasks }, delay);
 };
 
-export const saveSchedules = async (userId: string, schedules: ClassItem[]) => {
+export const saveSchedules = async (userId: string, schedules: EventItem[]) => {
   return universalSync.saveData('schedules', userId, { schedules });
 };
 
-export const loadSchedules = async (userId: string): Promise<ClassItem[]> => {
+export const loadSchedules = async (userId: string): Promise<EventItem[]> => {
   console.log('loadSchedules: Loading schedules for user:', userId);
   
   // Check for migration on first load
@@ -599,7 +606,7 @@ export const loadSchedules = async (userId: string): Promise<ClassItem[]> => {
   return schedules;
 };
 
-export const autoSaveSchedules = async (userId: string, schedules: ClassItem[], delay?: number) => {
+export const autoSaveSchedules = async (userId: string, schedules: EventItem[], delay?: number) => {
   return universalSync.autoSave('schedules', userId, { schedules }, delay);
 };
 

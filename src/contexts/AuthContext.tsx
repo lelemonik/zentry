@@ -13,6 +13,7 @@ import {
 import { auth, googleProvider, isUsingDemoConfig, handleFirebaseNetworkError } from '@/lib/firebase';
 
 import { universalSync } from '@/lib/universal-sync';
+import { dataPreloader } from '@/lib/data-preloader';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -254,6 +255,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }));
           
           console.log('👤 User data cached to localStorage');
+          
+          // Preload all user data for faster component loading
+          try {
+            console.log('🚀 Starting data preload for faster component loading...');
+            dataPreloader.preloadUserData(user.uid);
+          } catch (error) {
+            console.error('Error preloading user data:', error);
+          }
         } else {
           console.log('👤 No authenticated user');
           setCurrentUser(null);
