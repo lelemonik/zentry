@@ -137,7 +137,7 @@ export default function NotesManager() {
     return matchesSearch && matchesCategory;
   });
 
-  const categories = Array.from(new Set([...notes.map(note => note.category), 'General', 'Study', 'Work', 'Personal']));
+  const categories = Array.from(new Set([...notes.map(note => note.category), 'General', 'School', 'Work', 'Personal']));
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -150,7 +150,7 @@ export default function NotesManager() {
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
-      <Card className="shadow-medium">
+      <Card className="glass-card shadow-medium">
         <CardHeader className="pb-3 sm:pb-6">
           <CardTitle className="flex items-center justify-between text-lg sm:text-xl">
             <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export default function NotesManager() {
           </div>
 
           {isCreating && (
-            <Card className="border-2 border-secondary animate-slide-up">
+            <Card className="glass-surface border-2 border-secondary animate-slide-up">
               <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Input
@@ -273,7 +273,7 @@ export default function NotesManager() {
           <Card 
             key={note.id}
             className={cn(
-              "shadow-soft transition-all duration-200 hover:shadow-medium cursor-pointer group",
+              "glass-surface shadow-soft transition-all duration-200 hover:shadow-medium cursor-pointer group",
               editingNote === note.id && "ring-2 ring-secondary"
             )}
             onClick={() => setEditingNote(editingNote === note.id ? null : note.id)}
@@ -350,7 +350,7 @@ export default function NotesManager() {
         ))}
 
         {filteredNotes.length === 0 && !isCreating && (
-          <Card className="shadow-soft sm:col-span-2 lg:col-span-3">
+          <Card className="glass-surface shadow-soft sm:col-span-2 lg:col-span-3">
             <CardContent className="p-6 sm:p-8 text-center">
               <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
               <p className="text-sm sm:text-base text-muted-foreground">

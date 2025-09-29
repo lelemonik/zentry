@@ -110,7 +110,7 @@ const LoginPage = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
+    <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -118,9 +118,9 @@ const LoginPage = () => {
           <p className="text-muted-foreground font-medium">Sign in to your Zentry account</p>
         </div>
 
-        <Card className="shadow-large bg-card text-card-foreground border-border">
+        <Card className="glass-modal shadow-large">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl text-center font-semibold text-card-foreground">Sign In</CardTitle>
+            <CardTitle className="text-xl text-center font-semibold text-card-foreground">Log In</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {error && (
@@ -254,10 +254,10 @@ const LoginPage = () => {
                 {loading ? (
                   <>
                     <LoadingSpinner size="sm" className="mr-2" />
-                    Loging In...
+                    Logging In...
                   </>
                 ) : (
-                  'Log In'
+                  'Login'
                 )}
               </Button>
             </form>

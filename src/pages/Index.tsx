@@ -35,9 +35,9 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen gradient-bg">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-40 glass-nav">
         <div className={cn(responsiveClasses.container.base, responsiveClasses.container.sm, responsiveClasses.container.md, responsiveClasses.container.lg)}>
           <div className="flex items-center justify-between py-3 sm:py-4">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -51,7 +51,7 @@ const Index = () => {
             </div>
             
             <div className="flex items-center gap-4">
-              <Card className="glass hidden sm:block">
+              <Card className="glass-card hidden sm:block">
                 <CardContent className="p-3">
                   <p className="text-sm font-medium">
                     {new Date().toLocaleDateString('en-US', { 
@@ -140,7 +140,7 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="mt-12 border-t border-border bg-background/50">
+      <footer className="mt-12 glass-surface border-t-0">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
@@ -157,7 +157,7 @@ const Index = () => {
 
       {/* Profile Dialog */}
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="glass-modal max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
@@ -170,7 +170,7 @@ const Index = () => {
 
       {/* Settings Dialog */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="glass-modal max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />

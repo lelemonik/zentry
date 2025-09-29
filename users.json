@@ -1,0 +1,49 @@
+{"users": [
+{
+  "localId": "SLWzGSXvXwU3LSY5r89vhJSZgOw2",
+  "email": "gaylemonique21@gmail.com",
+  "emailVerified": true,
+  "displayName": "chi",
+  "photoUrl": "https://lh3.googleusercontent.com/a/ACg8ocLalOrsc0eaTpc8vMy8gHjnRXlDWhFMqu2htBRA-0kQTDe7phs=s96-c",
+  "lastSignedInAt": "1759115413052",
+  "createdAt": "1759037712157",
+  "providerUserInfo": [
+    {
+      "providerId": "google.com",
+      "rawId": "109466991070293215652",
+      "email": "gaylemonique21@gmail.com",
+      "displayName": "Gayle",
+      "photoUrl": "https://lh3.googleusercontent.com/a/ACg8ocLalOrsc0eaTpc8vMy8gHjnRXlDWhFMqu2htBRA-0kQTDe7phs=s96-c"
+    }
+  ]
+},
+{
+  "localId": "iI1TX0lDb4Rp7Ar5lLQv5ZYbrwv1",
+  "email": "gflorencio23a-0059@olopsc.edu.ph",
+  "emailVerified": true,
+  "displayName": "Gayle Monique Florencio",
+  "photoUrl": "https://lh3.googleusercontent.com/a/ACg8ocLtGGyQmYQ4p4UmRSTNamc26tlrsRFkMVGyCCS7Qfj2YVLh8fK4=s96-c",
+  "lastSignedInAt": "1759037633348",
+  "createdAt": "1759037633348",
+  "providerUserInfo": [
+    {
+      "providerId": "google.com",
+      "rawId": "112425678785885940411",
+      "email": "gflorencio23a-0059@olopsc.edu.ph",
+      "displayName": "Gayle Monique Florencio",
+      "photoUrl": "https://lh3.googleusercontent.com/a/ACg8ocLtGGyQmYQ4p4UmRSTNamc26tlrsRFkMVGyCCS7Qfj2YVLh8fK4=s96-c"
+    }
+  ]
+},
+{
+  "localId": "quqdiurxnNRgdsB2Ukkb53Lw8hh1",
+  "email": "terddy03@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "rvioxPcDjvxh8SXOtGy3zJm6g8aN55mdeoY29bbCDxT9uaK4/1CYgf8sgi4QZ3PZ+D9xchjmCCNxt0CI27NHnA==",
+  "salt": "V6YMUtccRy/5XQ==",
+  "displayName": "Terd inocentes",
+  "photoUrl": "",
+  "lastSignedInAt": "1759115450388",
+  "createdAt": "1759038247153",
+  "providerUserInfo": []
+}]}

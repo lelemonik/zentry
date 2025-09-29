@@ -5,6 +5,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import { FontSizeProvider } from "./contexts/FontSizeContext";
+import { PreferencesProvider } from "./contexts/PreferencesContext";
 import SmartHomePage from "./components/SmartHomePage";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
@@ -108,39 +111,45 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-                <GoogleAuthRedirectHandler />
-                <Routes>
-                  {/* Smart Home Route - shows Landing for guests, Home for authenticated users */}
-                  <Route path="/" element={<SmartHomePage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/signup" element={<SignupPage />} />
+        <PreferencesProvider>
+          <LanguageProvider>
+            <FontSizeProvider>
+              <AuthProvider>
+                <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                    <GoogleAuthRedirectHandler />
+                    <Routes>
+                      {/* Smart Home Route - shows Landing for guests, Home for authenticated users */}
+                      <Route path="/" element={<SmartHomePage />} />
+                      <Route path="/login" element={<LoginPage />} />
+                      <Route path="/signup" element={<SignupPage />} />
 
-                  
-                  {/* Protected Routes */}
-                  <Route 
-                    path="/dashboard" 
-                    element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  {/* Redirects */}
-                  <Route path="/app" element={<Navigate to="/dashboard" replace />} />
-                  
-                  {/* 404 Page */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
+                      
+                      {/* Protected Routes */}
+                      <Route 
+                        path="/dashboard" 
+                        element={
+                          <ProtectedRoute>
+                            <Dashboard />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      
+                      {/* Redirects */}
+                      <Route path="/app" element={<Navigate to="/dashboard" replace />} />
+                      
+                      {/* 404 Page */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </BrowserRouter>
+              </TooltipProvider>
+            </AuthProvider>
+          </FontSizeProvider>
+        </LanguageProvider>
+      </PreferencesProvider>
+    </QueryClientProvider>
     </ErrorBoundary>
   );
 };

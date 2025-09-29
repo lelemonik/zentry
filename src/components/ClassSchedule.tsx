@@ -317,7 +317,7 @@ export default function ClassSchedule() {
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
-      <Card className="shadow-medium">
+      <Card className="glass-card shadow-medium">
         <CardHeader className="pb-3 sm:pb-6">
           <CardTitle className="flex items-center justify-between text-lg sm:text-xl">
             <div className="flex items-center gap-2">
@@ -342,7 +342,7 @@ export default function ClassSchedule() {
           </Button>
 
           {isCreating && (
-            <Card className="mt-3 sm:mt-4 border-2 border-accent animate-slide-up">
+            <Card className="mt-3 sm:mt-4 glass-surface border-2 border-accent animate-slide-up">
               <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <Input
@@ -475,195 +475,225 @@ export default function ClassSchedule() {
       </Card>
 
       {isLoading ? (
-        <div className="grid gap-3 sm:gap-4">
-          {DAYS.map(day => (
-            <Card key={day} className="shadow-soft animate-pulse">
-              <CardHeader className="pb-2 sm:pb-3">
-                <div className="h-6 bg-muted rounded w-20"></div>
-              </CardHeader>
-              <CardContent className="p-3 sm:p-6">
-                <div className="h-8 bg-muted rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="grid gap-3 sm:gap-4">
-          {DAYS.map(day => {
-          const dayClasses = getClassesForDay(day);
-          return (
-            <Card key={day} className="shadow-soft">
-              <CardHeader className="pb-2 sm:pb-3">
-                <CardTitle className="text-base sm:text-lg font-semibold">{day}</CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 sm:p-6">
-                {dayClasses.length === 0 ? (
-                  <p className="text-muted-foreground text-xs sm:text-sm py-3 sm:py-4">Nothing scheduled</p>
-                ) : (
-                  <div className="space-y-2 sm:space-y-3">
-                    {dayClasses.map(cls => (
-                      <Card 
-                        key={cls.id}
-                        className={cn(
-                          "transition-all duration-200 hover:shadow-medium cursor-pointer",
-                          cls.color, "text-white"
-                        )}
-                        onClick={() => setEditingClass(editingClass === cls.id ? null : cls.id)}
-                      >
-                        <CardContent className="p-3 sm:p-4">
-                          {editingClass === cls.id ? (
-                            <div className="space-y-3 sm:space-y-4 text-foreground" onClick={(e) => e.stopPropagation()}>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                                <Input
-                                  value={cls.name}
-                                  onChange={(e) => updateClass(cls.id, { name: e.target.value })}
-                                  placeholder="Class name"
-                                  className="text-sm sm:text-base"
-                                />
-                                <Input
-                                  value={cls.organizer}
-                                  onChange={(e) => updateClass(cls.id, { organizer: e.target.value })}
-                                  placeholder="Organizer"
-                                  className="text-sm sm:text-base"
-                                />
-                                <Input
-                                  value={cls.location}
-                                  onChange={(e) => updateClass(cls.id, { location: e.target.value })}
-                                  placeholder="Location"
-                                  className="text-sm sm:text-base"
-                                />
-                                <Select value={cls.day} onValueChange={(value) => updateClass(cls.id, { day: value })}>
-                                  <SelectTrigger className="text-sm sm:text-base">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {DAYS.map(day => (
-                                      <SelectItem key={day} value={day}>{day}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Select value={cls.startTime} onValueChange={(value) => updateClass(cls.id, { startTime: value })}>
-                                  <SelectTrigger className="text-sm sm:text-base">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {generateTimeSlots().map(time => (
-                                      <SelectItem key={time} value={time}>{formatTime(time)}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Select value={cls.endTime} onValueChange={(value) => updateClass(cls.id, { endTime: value })}>
-                                  <SelectTrigger className="text-sm sm:text-base">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {generateTimeSlots().map(time => (
-                                      <SelectItem key={time} value={time}>{formatTime(time)}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              
-                              <div className="flex gap-2 flex-wrap">
-                                {COLORS.map(color => (
-                                  <button
-                                    key={color}
-                                    className={cn(
-                                      "w-8 h-8 sm:w-6 sm:h-6 rounded-full transition-all touch-manipulation",
-                                      color,
-                                      cls.color === color && "ring-2 ring-white"
-                                    )}
-                                    onClick={() => updateClass(cls.id, { color })}
-                                  />
-                                ))}
-                              </div>
-
-                              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setEditingClass(null)}
-                                  className="w-full sm:w-auto"
-                                >
-                                  Done
-                                </Button>
-                                <Button 
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => deleteClass(cls.id)}
-                                  className="w-full sm:w-auto"
-                                >
-                                  <Trash2 className="h-3 w-3 mr-1 sm:mr-0" />
-                                  <span className="sm:sr-only">Delete</span>
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 sm:justify-between">
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-sm sm:text-base truncate">{cls.name}</h4>
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm opacity-90 mt-1">
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3 flex-shrink-0" />
-                                    <span className="truncate">{formatTime(cls.startTime)} - {formatTime(cls.endTime)}</span>
-                                  </div>
-                                  {cls.organizer && (
-                                    <span className="truncate">{cls.organizer}</span>
-                                  )}
-                                  {cls.location && (
-                                    <div className="flex items-center gap-1 min-w-0">
-                                      <MapPin className="h-3 w-3 flex-shrink-0" />
-                                      <span className="truncate">{cls.location}</span>
-                                    </div>
-                                  )}
-                                  {cls.hasReminder && (
-                                    <div className="flex items-center gap-1">
-                                      <Bell className="h-3 w-3 flex-shrink-0" />
-                                      <span className="text-xs">{cls.reminderMinutes}min</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1 sm:gap-2 self-end sm:self-center">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={cn(
-                                    "text-white hover:bg-white/20 h-7 w-7 sm:h-8 sm:w-8 p-0",
-                                    cls.hasReminder && "bg-white/20"
-                                  )}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleClassReminder(cls.id);
-                                  }}
-                                  title={cls.hasReminder ? "Disable reminder" : "Enable reminder"}
-                                >
-                                  {cls.hasReminder ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-white hover:bg-white/20 h-7 w-7 sm:h-8 sm:w-8 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingClass(cls.id);
-                                  }}
-                                >
-                                  <Edit2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
+        <Card className="glass-card shadow-medium">
+          <CardContent className="p-4">
+            <div className="animate-pulse">
+              <div className="h-8 bg-muted rounded w-40 mb-4"></div>
+              <div className="grid grid-cols-8 gap-2 min-h-96">
+                <div className="space-y-2">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="h-16 bg-muted rounded"></div>
+                  ))}
+                </div>
+                {Array.from({ length: 7 }).map((_, dayIndex) => (
+                  <div key={dayIndex} className="space-y-2">
+                    <div className="h-8 bg-muted rounded"></div>
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <div key={i} className="h-16 bg-muted rounded"></div>
                     ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-        </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="glass-card shadow-medium overflow-hidden">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <div className="min-w-[280px] sm:min-w-[600px] lg:min-w-[800px]">
+                {/* Header with days */}
+                <div className="grid grid-cols-8 border-b border-border/20">
+                  <div className="p-2 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground bg-muted/30">
+                    Time
+                  </div>
+                  {DAYS.slice(0, 7).map(day => (
+                    <div key={day} className="p-2 sm:p-4 text-center border-l border-border/20">
+                      <div className="font-medium text-xs sm:text-sm">{day.slice(0, 3)}</div>
+                      <div className="text-xs text-muted-foreground mt-1 hidden sm:block">{day.slice(0, 3)}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Time slots grid */}
+                {Array.from({ length: 13 }, (_, index) => {
+                  const hour = 7 + index; // Start from 7:30 AM
+                  const timeSlot = `${hour}:30 - ${hour + 1}:00`;
+                  const displayTime = `${hour.toString().padStart(2, '0')}:30`;
+                  
+                  return (
+                    <div key={timeSlot} className="grid grid-cols-8 border-b border-border/10 min-h-[60px] sm:min-h-[80px]">
+                      {/* Time label */}
+                      <div className="p-2 sm:p-4 text-xs sm:text-sm text-muted-foreground bg-muted/10 border-r border-border/20 flex items-center">
+                        <span className="text-xs">{displayTime}</span>
+                      </div>
+                      
+                      {/* Day columns */}
+                      {DAYS.slice(0, 7).map(day => {
+                        const dayClasses = getClassesForDay(day).filter(cls => {
+                          const classHour = parseInt(cls.startTime.split(':')[0]);
+                          return classHour === hour;
+                        });
+                        
+                        return (
+                          <div key={`${day}-${timeSlot}`} className="border-l border-border/10 p-0.5 sm:p-1 relative min-h-[60px] sm:min-h-[80px]">
+                            {dayClasses.map(cls => (
+                              <div 
+                                key={cls.id}
+                                className={cn(
+                                  "transition-all duration-200 hover:shadow-sm cursor-pointer border-0 rounded p-1 sm:p-2 text-xs text-white m-0.5 sm:m-1 touch-manipulation",
+                                  cls.color
+                                )}
+                                onClick={() => setEditingClass(editingClass === cls.id ? null : cls.id)}
+                              >
+                                <div className="font-medium truncate text-xs sm:text-sm leading-tight">{cls.name}</div>
+                                <div className="text-xs opacity-90 truncate hidden sm:block">{cls.organizer}</div>
+                                <div className="text-xs opacity-75 hidden sm:block">{formatTime(cls.startTime)} - {formatTime(cls.endTime)}</div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Edit Modal for selected class */}
+      {editingClass && classes.find(cls => cls.id === editingClass) && (
+        <Card className="glass-modal shadow-large mx-2 sm:mx-0">
+          <CardHeader>
+            <CardTitle className="text-lg sm:text-xl">Edit Class</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 sm:space-y-4">
+            {(() => {
+              const cls = classes.find(c => c.id === editingClass);
+              if (!cls) return null;
+              
+              return (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name">Class Name</Label>
+                      <Input
+                        id="name"
+                        value={cls.name}
+                        onChange={(e) => updateClass(cls.id, { name: e.target.value })}
+                        placeholder="Class name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="organizer">Organizer</Label>
+                      <Input
+                        id="organizer"
+                        value={cls.organizer}
+                        onChange={(e) => updateClass(cls.id, { organizer: e.target.value })}
+                        placeholder="Organizer"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      value={cls.location}
+                      onChange={(e) => updateClass(cls.id, { location: e.target.value })}
+                      placeholder="Location"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="day">Day</Label>
+                      <Select value={cls.day} onValueChange={(value) => updateClass(cls.id, { day: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DAYS.map(day => (
+                            <SelectItem key={day} value={day}>{day}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="start-time">Start Time</Label>
+                      <Select value={cls.startTime} onValueChange={(value) => updateClass(cls.id, { startTime: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {generateTimeSlots().map(time => (
+                            <SelectItem key={time} value={time}>{formatTime(time)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="end-time">End Time</Label>
+                      <Select value={cls.endTime} onValueChange={(value) => updateClass(cls.id, { endTime: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {generateTimeSlots().map(time => (
+                            <SelectItem key={time} value={time}>{formatTime(time)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label>Color</Label>
+                    <div className="flex gap-2 flex-wrap mt-2">
+                      {COLORS.map(color => (
+                        <button
+                          key={color}
+                          className={cn(
+                            "w-8 h-8 rounded-full transition-all",
+                            color,
+                            cls.color === color && "ring-2 ring-primary"
+                          )}
+                          onClick={() => updateClass(cls.id, { color })}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="reminder"
+                      checked={cls.hasReminder}
+                      onCheckedChange={(checked) => updateClass(cls.id, { hasReminder: checked })}
+                    />
+                    <Label htmlFor="reminder">Enable reminder</Label>
+                  </div>
+                  
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setEditingClass(null)}>
+                      Cancel
+                    </Button>
+                    <Button variant="destructive" onClick={() => deleteClass(cls.id)}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                    <Button onClick={() => setEditingClass(null)}>
+                      Done
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

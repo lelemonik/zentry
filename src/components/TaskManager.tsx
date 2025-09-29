@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePreferences } from '@/contexts/PreferencesContext';
+import { useAnimationClasses } from '@/hooks/use-animations';
 import { autoSaveTasks, loadTasks, Task } from '@/lib/universal-sync';
 import { TaskSkeleton } from '@/components/ui/loading';
 import { offlineDB, initOfflineDB } from '../lib/offline-db';
@@ -17,6 +19,8 @@ import { responsiveClasses } from '@/lib/responsive-utils';
 
 export default function TaskManager() {
   const { currentUser: user } = useAuth();
+  const { preferences } = usePreferences();
+  const { animationClasses } = useAnimationClasses();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
   const [newTaskCategory, setNewTaskCategory] = useState('General');
@@ -315,12 +319,17 @@ export default function TaskManager() {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.category.toLowerCase().includes(searchTerm.toLowerCase());
     
+    // If showCompletedTasks is disabled, hide completed tasks unless explicitly filtering for them
+    if (!preferences.showCompletedTasks && task.completed && filter !== 'completed') {
+      return false;
+    }
+    
     if (filter === 'active') return !task.completed && matchesSearch;
     if (filter === 'completed') return task.completed && matchesSearch;
     return matchesSearch;
   });
 
-  const categories = Array.from(new Set([...tasks.map(task => task.category), 'General', 'Work', 'Study', 'Personal']));
+  const categories = Array.from(new Set([...tasks.map(task => task.category), 'General', 'Work', 'School', 'Personal']));
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -332,7 +341,7 @@ export default function TaskManager() {
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
-      <Card className="shadow-medium">
+      <Card className="glass-card shadow-medium">
         <CardHeader className="pb-3 sm:pb-6">
           <CardTitle className="flex items-center justify-between text-lg sm:text-xl">
             <div className="flex items-center gap-2">
@@ -356,7 +365,7 @@ export default function TaskManager() {
                   placeholder="Search tasks..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 text-sm sm:text-base"
+                  className="pl-10 text-sm sm:text-base min-h-[44px] touch-manipulation"
                 />
               </div>
             </div>
@@ -394,7 +403,7 @@ export default function TaskManager() {
                   </Select>
                   <Button 
                     onClick={addTask} 
-                    className="bg-gradient-primary hover:opacity-90 transition-opacity px-3 sm:px-4"
+                    className={cn("bg-gradient-primary hover:opacity-90 px-3 sm:px-4", animationClasses.transitionOpacity)}
                     disabled={!newTask.trim()}
                   >
                     <Plus className="h-4 w-4" />
@@ -494,7 +503,7 @@ export default function TaskManager() {
           <Card 
             key={task.id} 
             className={cn(
-              "shadow-soft transition-all duration-200 hover:shadow-medium",
+              "glass-surface shadow-soft transition-all duration-200 hover:shadow-medium",
               task.completed && "opacity-60"
             )}
           >
@@ -646,7 +655,7 @@ export default function TaskManager() {
         ))}
 
           {filteredTasks.length === 0 && (
-            <Card className="shadow-soft">
+            <Card className="glass-surface shadow-soft">
               <CardContent className="p-6 sm:p-8 text-center">
                 <Clock className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
                 <p className="text-sm sm:text-base text-muted-foreground">

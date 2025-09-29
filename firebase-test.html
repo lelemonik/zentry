@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase Connection Test</title>
+</head>
+<body>
+    <h1>Firebase Connection Test</h1>
+    <div id="status">Testing...</div>
+    <button id="testAuth">Test Authentication</button>
+    
+    <script type="module">
+        // Test Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPmHetgINf_zwlrrzeJra5YfIIw7R9xD4",
+            authDomain: "zentry-86a55.firebaseapp.com",
+            projectId: "zentry-86a55",
+            storageBucket: "zentry-86a55.firebasestorage.app",
+            messagingSenderId: "959128397329",
+            appId: "1:959128397329:web:3eeddef53677369e07b3b0"
+        };
+
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const statusDiv = document.getElementById('status');
+        const testBtn = document.getElementById('testAuth');
+
+        // Test basic connection
+        try {
+            statusDiv.innerHTML = '✅ Firebase initialized successfully!<br>Project: ' + firebaseConfig.projectId;
+        } catch (error) {
+            statusDiv.innerHTML = '❌ Firebase initialization failed: ' + error.message;
+        }
+
+        // Test authentication
+        testBtn.addEventListener('click', async () => {
+            try {
+                statusDiv.innerHTML += '<br>🧪 Testing authentication...';
+                const result = await signInAnonymously(auth);
+                statusDiv.innerHTML += '<br>✅ Authentication works! User: ' + result.user.uid;
+            } catch (error) {
+                statusDiv.innerHTML += '<br>❌ Auth failed: ' + error.message + ' (Code: ' + error.code + ')';
+            }
+        });
+    </script>
+</body>
+</html>

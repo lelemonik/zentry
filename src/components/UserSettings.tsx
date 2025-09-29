@@ -11,26 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { usePersistedState } from '@/hooks/use-local-storage';
 import { requestNotificationPermission, isAppInstalled } from '@/lib/pwa';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useFontSize } from '@/contexts/FontSizeContext';
+import { usePreferences } from '@/contexts/PreferencesContext';
 import { cn } from '@/lib/utils';
 import { responsiveClasses, getResponsiveFontSize } from '@/lib/responsive-utils';
 import { offlineDB } from '../lib/offline-db';
+import LanguageFontDemo from './LanguageFontDemo';
 
 export default function UserSettings() {
   const { currentUser } = useAuth();
-  
-  const [preferences, setPreferences] = usePersistedState('preferences', {
-    notifications: true,
-    compactView: false,
-    showCompletedTasks: true,
-    autoSave: true,
-    soundEffects: true,
-    emailNotifications: false,
-    weekStartsMonday: true,
-    timeFormat24h: false,
-    language: 'en',
-    fontSize: 'medium',
-    animationsEnabled: true,
-  });
+  const { language, setLanguage, t, availableLanguages } = useLanguage();
+  const { fontSize, setFontSize, fontSizeClasses, availableSizes } = useFontSize();
+  const { preferences, setPreferences, updatePreference } = usePreferences();
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [isInstalled, setIsInstalled] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -106,14 +99,13 @@ export default function UserSettings() {
     setMessage(null);
     
     try {
-      // Save preferences to offline DB
-      await offlineDB.saveUserPreferences(preferences);
-      
-      // Apply sound effects if enabled
-      if (preferences.soundEffects) {
-        // Play a subtle save sound (you can implement this)
-        console.log('🔊 Settings saved sound');
-      }
+      // Save all preferences including language and font size
+      const allPreferences = {
+        ...preferences,
+        language,
+        fontSize
+      };
+      await offlineDB.saveUserPreferences(allPreferences);
       
       setMessage({ type: 'success', text: 'All settings saved successfully!' });
       
@@ -132,10 +124,13 @@ export default function UserSettings() {
     const savePreferences = async () => {
       if (preferences.autoSave) {
         try {
-          await offlineDB.saveUserPreferences(preferences);
-          if (preferences.soundEffects) {
-            console.log('🔊 Auto-saved preferences');
-          }
+          // Include current language and font size in saved preferences
+          const allPreferences = {
+            ...preferences,
+            language,
+            fontSize
+          };
+          await offlineDB.saveUserPreferences(allPreferences);
         } catch (error) {
           console.error('Error auto-saving preferences:', error);
         }
@@ -145,7 +140,7 @@ export default function UserSettings() {
     // Debounce auto-save
     const timeoutId = setTimeout(savePreferences, 1000);
     return () => clearTimeout(timeoutId);
-  }, [preferences]);
+  }, [preferences, language, fontSize]);
 
   const exportData = () => {
     // Export settings and preferences data
@@ -165,6 +160,9 @@ export default function UserSettings() {
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-4 max-w-4xl mx-auto">
+      {/* Language & Font Size Demo */}
+      <LanguageFontDemo />
+      
       {/* Success/Error Messages */}
       {message && (
         <Alert 
@@ -188,15 +186,17 @@ export default function UserSettings() {
 
       <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
         <CardHeader className="pb-3 sm:pb-6 px-4 sm:px-6">
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl font-semibold">
+          <CardTitle className={cn("flex items-center gap-2 font-semibold", fontSizeClasses.heading)}>
             <Bell className="h-5 w-5 text-primary" />
-            Preferences & Settings
+            {t('preferences')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6 p-4 sm:p-6">
           {/* Notifications Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Notifications</h3>
+            <h3 className={cn("font-semibold text-muted-foreground uppercase tracking-wide", fontSizeClasses.small)}>
+              {t('notifications')}
+            </h3>
             
             <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
               <div className="space-y-1 flex-1 min-w-0">
@@ -220,55 +220,36 @@ export default function UserSettings() {
               />
             </div>
 
-            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
-              <div className="space-y-1 flex-1 min-w-0">
-                <Label className="text-sm sm:text-base font-medium">Email Notifications</Label>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Receive email reminders for upcoming tasks and deadlines
-                </p>
-              </div>
-              <Switch
-                checked={preferences.emailNotifications}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, emailNotifications: checked }))
-                }
-                className="shrink-0"
-              />
-            </div>
+
           </div>
 
           {/* Interface & Display */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Interface & Display</h3>
+            <h3 className={cn("font-semibold text-muted-foreground uppercase tracking-wide", fontSizeClasses.small)}>
+              Interface & Display
+            </h3>
             
-            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
-              <div className="space-y-1 flex-1 min-w-0">
-                <Label className="text-sm sm:text-base font-medium">Compact View</Label>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Show more items in less space for better overview
-                </p>
-              </div>
-              <Switch
-                checked={preferences.compactView}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, compactView: checked }))
-                }
-                className="shrink-0"
-              />
-            </div>
+
 
             <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
               <div className="space-y-1 flex-1 min-w-0">
-                <Label className="text-sm sm:text-base font-medium">Show Completed Tasks</Label>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Display completed tasks in your task lists
+                <div className="flex items-center gap-2">
+                  <Label className={cn("font-medium", fontSizeClasses.text)}>Show Completed Tasks</Label>
+                  {preferences.showCompletedTasks ? (
+                    <Badge variant="default" className="text-xs px-1.5 py-0.5">Visible</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs px-1.5 py-0.5">Hidden</Badge>
+                  )}
+                </div>
+                <p className={cn("text-muted-foreground leading-relaxed", fontSizeClasses.small)}>
+                  {preferences.showCompletedTasks 
+                    ? "Completed tasks are shown in all task lists" 
+                    : "Completed tasks are hidden from 'All' and 'Active' views"}
                 </p>
               </div>
               <Switch
                 checked={preferences.showCompletedTasks}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, showCompletedTasks: checked }))
-                }
+                onCheckedChange={(checked) => updatePreference('showCompletedTasks', checked)}
                 className="shrink-0"
               />
             </div>
@@ -276,20 +257,26 @@ export default function UserSettings() {
             <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
               <div className="space-y-1 flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <Label className="text-sm sm:text-base font-medium">Animations</Label>
-                  {preferences.animationsEnabled && (
-                    <Badge variant="secondary" className="text-xs px-1.5 py-0.5">Enabled</Badge>
+                  <Label className={cn("font-medium", fontSizeClasses.text)}>Animations</Label>
+                  {preferences.animationsEnabled ? (
+                    <Badge variant="default" className="text-xs px-1.5 py-0.5">
+                      ✨ Enabled
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                      🚫 Disabled
+                    </Badge>
                   )}
                 </div>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Enable smooth transitions and visual effects
+                <p className={cn("text-muted-foreground leading-relaxed", fontSizeClasses.small)}>
+                  {preferences.animationsEnabled 
+                    ? "Smooth transitions and visual effects are active"
+                    : "All animations and transitions are disabled for better performance"}
                 </p>
               </div>
               <Switch
                 checked={preferences.animationsEnabled}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, animationsEnabled: checked }))
-                }
+                onCheckedChange={(checked) => updatePreference('animationsEnabled', checked)}
                 className="shrink-0"
               />
             </div>
@@ -297,7 +284,9 @@ export default function UserSettings() {
 
           {/* Data & Behavior */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Data & Behavior</h3>
+            <h3 className={cn("font-semibold text-muted-foreground uppercase tracking-wide", fontSizeClasses.small)}>
+              Data & Behavior
+            </h3>
             
             <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
               <div className="space-y-1 flex-1 min-w-0">
@@ -313,111 +302,69 @@ export default function UserSettings() {
               </div>
               <Switch
                 checked={preferences.autoSave}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, autoSave: checked }))
-                }
+                onCheckedChange={(checked) => updatePreference('autoSave', checked)}
                 className="shrink-0"
               />
             </div>
 
-            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
-              <div className="space-y-1 flex-1 min-w-0">
-                <Label className="text-sm sm:text-base font-medium">Sound Effects</Label>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Play audio feedback for task completion and alerts
-                </p>
-              </div>
-              <Switch
-                checked={preferences.soundEffects}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, soundEffects: checked }))
-                }
-                className="shrink-0"
-              />
-            </div>
+
           </div>
 
-          {/* Time & Calendar */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Time & Calendar</h3>
-            
-            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
-              <div className="space-y-1 flex-1 min-w-0">
-                <Label className="text-sm sm:text-base font-medium">Week Starts Monday</Label>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Calendar weeks start on Monday instead of Sunday
-                </p>
-              </div>
-              <Switch
-                checked={preferences.weekStartsMonday}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, weekStartsMonday: checked }))
-                }
-                className="shrink-0"
-              />
-            </div>
 
-            <div className="flex items-start justify-between gap-4 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
-              <div className="space-y-1 flex-1 min-w-0">
-                <Label className="text-sm sm:text-base font-medium">24-hour Time Format</Label>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Display time in 24-hour format (14:30) instead of 12-hour (2:30 PM)
-                </p>
-              </div>
-              <Switch
-                checked={preferences.timeFormat24h}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, timeFormat24h: checked }))
-                }
-                className="shrink-0"
-              />
-            </div>
-          </div>
 
           {/* Accessibility & Localization */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Accessibility & Localization</h3>
+            <h3 className={cn("font-semibold text-muted-foreground uppercase tracking-wide", fontSizeClasses.small)}>
+              Accessibility & Localization
+            </h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="language" className="text-sm font-medium">Language</Label>
+                <Label htmlFor="language" className={cn("font-medium", fontSizeClasses.small)}>
+                  {t('language')}
+                </Label>
                 <Select
-                  value={preferences.language}
-                  onValueChange={(value) => setPreferences(prev => ({ ...prev, language: value }))}
+                  value={language}
+                  onValueChange={setLanguage}
                 >
                   <SelectTrigger className="w-full h-11">
-                    <SelectValue placeholder="Select language" />
+                    <SelectValue placeholder={t('language')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="en">🇺🇸 English</SelectItem>
-                    <SelectItem value="es">🇪🇸 Español</SelectItem>
-                    <SelectItem value="fr">🇫🇷 Français</SelectItem>
-                    <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
-                    <SelectItem value="pt">🇧🇷 Português</SelectItem>
-                    <SelectItem value="it">🇮🇹 Italiano</SelectItem>
-                    <SelectItem value="ja">🇯🇵 日本語</SelectItem>
-                    <SelectItem value="ko">🇰🇷 한국어</SelectItem>
-                    <SelectItem value="zh">🇨🇳 中文</SelectItem>
+                    {availableLanguages.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.flag} {lang.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <p className={cn("text-muted-foreground", fontSizeClasses.small)}>
+                  Interface language will change immediately
+                </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fontSize" className="text-sm font-medium">Font Size</Label>
+                <Label htmlFor="fontSize" className={cn("font-medium", fontSizeClasses.small)}>
+                  {t('fontSize')}
+                </Label>
                 <Select
-                  value={preferences.fontSize}
-                  onValueChange={(value) => setPreferences(prev => ({ ...prev, fontSize: value }))}
+                  value={fontSize}
+                  onValueChange={setFontSize}
                 >
                   <SelectTrigger className="w-full h-11">
-                    <SelectValue placeholder="Select font size" />
+                    <SelectValue placeholder={t('fontSize')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="small">Small (12px)</SelectItem>
-                    <SelectItem value="medium">Medium (14px)</SelectItem>
-                    <SelectItem value="large">Large (16px)</SelectItem>
-                    <SelectItem value="extra-large">Extra Large (18px)</SelectItem>
+                    {availableSizes.map((size) => (
+                      <SelectItem key={size.value} value={size.value}>
+                        {size.label} ({size.px})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <p className={cn("text-muted-foreground", fontSizeClasses.small)}>
+                  Font size changes apply immediately
+                </p>
               </div>
             </div>
           </div>
